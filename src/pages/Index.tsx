@@ -1,52 +1,222 @@
 
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
-import ColumnSelector from '@/components/ColumnSelector';
 import { Button } from '@/components/ui/button';
 import { Database, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Definindo o tipo para os campos do banco de dados
+interface DatabaseSchema {
+  id_user: string;
+  id_produtor: number;
+  codigo: string;
+  areia: number;
+  silte: number;
+  argila: number;
+  zinco: number;
+  manganes: number;
+  ferro: number;
+  cobre: number;
+  boro: number;
+  saturacaoAluminio: number;
+  saturacaoBases: number;
+  ctcph: number;
+  ctcEfetiva: number;
+  somaBases: number;
+  materiaOrganica: number;
+  hidrogenioAluminio: number;
+  aluminio: number;
+  magnesio: number;
+  calcio: number;
+  enxofre: number;
+  potassio: number;
+  fosforoMehlich: number;
+  phCacl: number;
+  necessidadeCalagemTalhao: number;
+  necessidadeCalagemHa: number;
+  cultura: string;
+  classificacaoTextural: string;
+  delete: number;
+  id_amostra: number;
+  fosfatagemHa: number;
+  fosfatagemTalhao: number;
+  potassioHa: number;
+  potassioTalhao: number;
+  data: string;
+  talhao: string;
+  assentamento: string;
+  cidade: string;
+  nome: string;
+  cpf: string;
+  propriedade: string;
+  area: number;
+}
+
+// Criar um array com os nomes dos campos para facilitar o mapeamento
+const dbFields = [
+  'id_user',
+  'id_produtor',
+  'codigo',
+  'areia',
+  'silte',
+  'argila',
+  'zinco',
+  'manganes',
+  'ferro',
+  'cobre',
+  'boro',
+  'saturacaoAluminio',
+  'saturacaoBases',
+  'ctcph',
+  'ctcEfetiva',
+  'somaBases',
+  'materiaOrganica',
+  'hidrogenioAluminio',
+  'aluminio',
+  'magnesio',
+  'calcio',
+  'enxofre',
+  'potassio',
+  'fosforoMehlich',
+  'phCacl',
+  'necessidadeCalagemTalhao',
+  'necessidadeCalagemHa',
+  'cultura',
+  'classificacaoTextural',
+  'delete',
+  'id_amostra',
+  'fosfatagemHa',
+  'fosfatagemTalhao',
+  'potassioHa',
+  'potassioTalhao',
+  'data',
+  'talhao',
+  'assentamento',
+  'cidade',
+  'nome',
+  'cpf',
+  'propriedade',
+  'area',
+];
+
+type FieldType = 'string' | 'number' | 'date';
+
+// Mapeamento dos tipos de cada campo
+const fieldTypes: Record<string, FieldType> = {
+  id_user: 'string',
+  id_produtor: 'number',
+  codigo: 'string',
+  areia: 'number',
+  silte: 'number',
+  argila: 'number',
+  zinco: 'number',
+  manganes: 'number',
+  ferro: 'number',
+  cobre: 'number',
+  boro: 'number',
+  saturacaoAluminio: 'number',
+  saturacaoBases: 'number',
+  ctcph: 'number',
+  ctcEfetiva: 'number',
+  somaBases: 'number',
+  materiaOrganica: 'number',
+  hidrogenioAluminio: 'number',
+  aluminio: 'number',
+  magnesio: 'number',
+  calcio: 'number',
+  enxofre: 'number',
+  potassio: 'number',
+  fosforoMehlich: 'number',
+  phCacl: 'number',
+  necessidadeCalagemTalhao: 'number',
+  necessidadeCalagemHa: 'number',
+  cultura: 'string',
+  classificacaoTextural: 'string',
+  delete: 'number',
+  id_amostra: 'number',
+  fosfatagemHa: 'number',
+  fosfatagemTalhao: 'number',
+  potassioHa: 'number',
+  potassioTalhao: 'number',
+  data: 'date',
+  talhao: 'string',
+  assentamento: 'string',
+  cidade: 'string',
+  nome: 'string',
+  cpf: 'string',
+  propriedade: 'string',
+  area: 'number',
+};
 
 const Index = () => {
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
     setData(jsonData);
     setColumns(headers);
-    setSelectedColumns([]); // Reset selected columns when new file is loaded
+    setColumnMapping({}); // Reset column mapping when new file is loaded
   };
 
-  const handleColumnToggle = (column: string) => {
-    setSelectedColumns((prev) =>
-      prev.includes(column)
-        ? prev.filter((col) => col !== column)
-        : [...prev, column]
-    );
+  const handleColumnMappingChange = (dbField: string, excelColumn: string) => {
+    setColumnMapping({
+      ...columnMapping,
+      [dbField]: excelColumn,
+    });
   };
 
   const handleImport = async () => {
     try {
       // Preparar os dados para inserção no PostgreSQL
-      const filteredData = data.map(row => 
-        Object.fromEntries(
-          selectedColumns.map(col => [col, row[col]])
-        )
-      );
+      const mappedData = data.map(row => {
+        const dbRow: Partial<DatabaseSchema> = {};
+        
+        // Aplicar o mapeamento de colunas
+        Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
+          if (excelColumn && row[excelColumn] !== undefined) {
+            // Converter o tipo de dado conforme necessário
+            switch(fieldTypes[dbField]) {
+              case 'number':
+                dbRow[dbField as keyof DatabaseSchema] = Number(row[excelColumn]) as any;
+                break;
+              case 'date':
+                // Se for uma data no formato de string, converte para o formato ISO
+                if (typeof row[excelColumn] === 'string') {
+                  dbRow[dbField as keyof DatabaseSchema] = new Date(row[excelColumn]).toISOString() as any;
+                } else if (row[excelColumn] instanceof Date) {
+                  dbRow[dbField as keyof DatabaseSchema] = row[excelColumn].toISOString() as any;
+                } else {
+                  dbRow[dbField as keyof DatabaseSchema] = row[excelColumn] as any;
+                }
+                break;
+              default:
+                dbRow[dbField as keyof DatabaseSchema] = String(row[excelColumn]) as any;
+                break;
+            }
+          }
+        });
+        
+        return dbRow;
+      });
       
-      // Aqui você deverá implementar a conexão com o PostgreSQL
-      // Exemplo de como seria a implementação:
+      console.log('Dados preparados para serem inseridos no PostgreSQL:', mappedData);
+      
+      // Simular a chamada para a API que inserirá os dados no PostgreSQL
+      // Na implementação real, você substituirá isso por uma chamada real para sua API
       /*
-      // Usando uma API REST:
       const response = await fetch('/api/importData', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          tableName: 'sua_tabela',  // Nome da tabela no PostgreSQL
-          columns: selectedColumns, 
-          data: filteredData 
-        }),
+        body: JSON.stringify({ data: mappedData }),
       });
       
       if (!response.ok) {
@@ -56,21 +226,16 @@ const Index = () => {
       const result = await response.json();
       */
       
-      // Como demonstração, apenas mostrar no console
-      console.log('Dados prontos para serem inseridos no PostgreSQL:', {
-        columns: selectedColumns,
-        data: filteredData,
-      });
-      
+      // Simulação bem-sucedida
       toast({
         title: "Sucesso",
-        description: `${filteredData.length} registros prontos para inserção no PostgreSQL. Veja o console para detalhes.`,
+        description: `${mappedData.length} registros prontos para inserção no PostgreSQL. Veja o console para detalhes.`,
       });
       
       // Resetar o estado após a importação bem-sucedida
       setData([]);
       setColumns([]);
-      setSelectedColumns([]);
+      setColumnMapping({});
     } catch (error) {
       console.error('Erro durante a importação:', error);
       toast({
@@ -84,7 +249,11 @@ const Index = () => {
   const handleReset = () => {
     setData([]);
     setColumns([]);
-    setSelectedColumns([]);
+    setColumnMapping({});
+  };
+
+  const getMappedFieldsCount = () => {
+    return Object.keys(columnMapping).filter(key => columnMapping[key] !== '').length;
   };
 
   return (
@@ -96,27 +265,60 @@ const Index = () => {
       ) : (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Dados Carregados</h2>
+            <h2 className="text-xl font-semibold">Mapear Colunas</h2>
             <Button variant="ghost" onClick={handleReset} className="gap-2">
               <X className="w-4 h-4" />
               Cancelar
             </Button>
           </div>
           
-          <ColumnSelector
-            columns={columns}
-            selectedColumns={selectedColumns}
-            onColumnToggle={handleColumnToggle}
-          />
+          <div className="bg-white p-4 border rounded-lg">
+            <p className="mb-4 text-sm text-gray-600">
+              Selecione a coluna da planilha que corresponde a cada campo do banco de dados. 
+              Você mapeou {getMappedFieldsCount()} de {dbFields.length} campos.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dbFields.map((field) => (
+                <div key={field} className="space-y-1">
+                  <label htmlFor={`field-${field}`} className="text-sm font-medium">
+                    {field}
+                    <span className="text-xs text-gray-500 ml-1">
+                      ({fieldTypes[field]})
+                    </span>
+                  </label>
+                  <Select
+                    value={columnMapping[field] || ''}
+                    onValueChange={(value) => handleColumnMappingChange(field, value)}
+                  >
+                    <SelectTrigger id={`field-${field}`} className="w-full">
+                      <SelectValue placeholder="Selecione uma coluna" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum</SelectItem>
+                      {columns.map((column) => (
+                        <SelectItem key={column} value={column}>
+                          {column}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </div>
           
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-600">
+              {data.length} registros encontrados na planilha.
+            </p>
             <Button
               onClick={handleImport}
-              disabled={selectedColumns.length === 0}
+              disabled={getMappedFieldsCount() === 0}
               className="gap-2"
             >
               <Database className="w-4 h-4" />
-              Importar Dados
+              Importar para o PostgreSQL
             </Button>
           </div>
         </div>

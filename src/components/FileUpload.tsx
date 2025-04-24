@@ -12,6 +12,11 @@ interface FileUploadProps {
 const FileUpload: React.FC<FileUploadProps> = ({ onFileLoaded }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -72,36 +77,36 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileLoaded }) => {
   return (
     <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
       <FileSpreadsheet className="w-12 h-12 text-gray-400 mb-4" />
-      <label htmlFor="file-upload" className="cursor-pointer">
-        <Button 
-          variant="outline" 
-          className="gap-2"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Upload className="w-4 h-4 animate-pulse" />
-              Carregando...
-            </>
-          ) : (
-            <>
-              <Import className="w-4 h-4" />
-              Selecionar Planilha
-            </>
-          )}
-        </Button>
-        <input
-          id="file-upload"
-          type="file"
-          className="hidden"
-          accept=".xlsx,.xls"
-          onChange={handleFileUpload}
-          onClick={(e) => {
-            // Resetar o valor para permitir selecionar o mesmo arquivo novamente
-            (e.target as HTMLInputElement).value = '';
-          }}
-        />
-      </label>
+      <Button 
+        variant="outline" 
+        className="gap-2"
+        disabled={isLoading}
+        onClick={handleButtonClick}
+      >
+        {isLoading ? (
+          <>
+            <Upload className="w-4 h-4 animate-pulse" />
+            Carregando...
+          </>
+        ) : (
+          <>
+            <Import className="w-4 h-4" />
+            Selecionar Planilha
+          </>
+        )}
+      </Button>
+      <input
+        ref={fileInputRef}
+        id="file-upload"
+        type="file"
+        className="hidden"
+        accept=".xlsx,.xls"
+        onChange={handleFileUpload}
+        onClick={(e) => {
+          // Resetar o valor para permitir selecionar o mesmo arquivo novamente
+          (e.target as HTMLInputElement).value = '';
+        }}
+      />
       <p className="mt-2 text-sm text-gray-500">Arquivos suportados: .xlsx, .xls</p>
     </div>
   );
