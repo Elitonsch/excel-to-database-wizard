@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
-import { Database, X } from 'lucide-react';
+import { Database, X, Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -11,72 +13,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-// Definindo o tipo para os campos do banco de dados
+// Database schema with updated field names
 interface DatabaseSchema {
   id_user: string;
-  codigo: string;
-  areia: number;
+  cod: string;
+  areia_total: number;
   silte: number;
   argila: number;
-  zinco: number;
-  manganes: number;
-  ferro: number;
-  cobre: number;
-  boro: number;
-  saturacaoAluminio: number;
-  saturacaoBases: number;
+  zn: number;
+  mn: number;
+  fe: number;
+  cu: number;
+  b: number;
+  m: number;
+  v: number;
   ctcph: number;
-  ctcEfetiva: number;
-  somaBases: number;
-  materiaOrganica: number;
-  hidrogenioAluminio: number;
-  aluminio: number;
-  magnesio: number;
-  calcio: number;
-  enxofre: number;
-  potassio: number;
-  fosforoMehlich: number;
-  phCacl: number;
-  necessidadeCalagemTalhao: number;
-  necessidadeCalagemHa: number;
+  ctc: number;
+  sb: number;
+  mo: number;
+  hal: number;
+  al3: number;
+  mg: number;
+  ca: number;
+  s: number;
+  k: number;
+  pmeh: number;
+  phcacl2: number;
+  nc_talhao: number;
+  nc: number;
   cultura: string;
-  classificacaoTextural: string;
+  classtext: string;
   delete: number;
-  data: string;
+  data: Date;
   talhao: string;
 }
 
-// Criar um array com os nomes dos campos para facilitar o mapeamento
+// Updated array with the new field names
 const dbFields = [
   'id_user',
-  'codigo',
-  'areia',
+  'cod',
+  'areia_total',
   'silte',
   'argila',
-  'zinco',
-  'manganes',
-  'ferro',
-  'cobre',
-  'boro',
-  'saturacaoAluminio',
-  'saturacaoBases',
+  'zn',
+  'mn',
+  'fe',
+  'cu',
+  'b',
+  'm',
+  'v',
   'ctcph',
-  'ctcEfetiva',
-  'somaBases',
-  'materiaOrganica',
-  'hidrogenioAluminio',
-  'aluminio',
-  'magnesio',
-  'calcio',
-  'enxofre',
-  'potassio',
-  'fosforoMehlich',
-  'phCacl',
-  'necessidadeCalagemTalhao',
-  'necessidadeCalagemHa',
+  'ctc',
+  'sb',
+  'mo',
+  'hal',
+  'al3',
+  'mg',
+  'ca',
+  's',
+  'k',
+  'pmeh',
+  'phcacl2',
+  'nc_talhao',
+  'nc',
   'cultura',
-  'classificacaoTextural',
+  'classtext',
   'delete',
   'data',
   'talhao',
@@ -84,36 +91,36 @@ const dbFields = [
 
 type FieldType = 'string' | 'number' | 'date';
 
-// Mapeamento dos tipos de cada campo
+// Updated field types mapping
 const fieldTypes: Record<string, FieldType> = {
   id_user: 'string',
-  codigo: 'string',
-  areia: 'number',
+  cod: 'string',
+  areia_total: 'number',
   silte: 'number',
   argila: 'number',
-  zinco: 'number',
-  manganes: 'number',
-  ferro: 'number',
-  cobre: 'number',
-  boro: 'number',
-  saturacaoAluminio: 'number',
-  saturacaoBases: 'number',
+  zn: 'number',
+  mn: 'number',
+  fe: 'number',
+  cu: 'number',
+  b: 'number',
+  m: 'number',
+  v: 'number',
   ctcph: 'number',
-  ctcEfetiva: 'number',
-  somaBases: 'number',
-  materiaOrganica: 'number',
-  hidrogenioAluminio: 'number',
-  aluminio: 'number',
-  magnesio: 'number',
-  calcio: 'number',
-  enxofre: 'number',
-  potassio: 'number',
-  fosforoMehlich: 'number',
-  phCacl: 'number',
-  necessidadeCalagemTalhao: 'number',
-  necessidadeCalagemHa: 'number',
+  ctc: 'number',
+  sb: 'number',
+  mo: 'number',
+  hal: 'number',
+  al3: 'number',
+  mg: 'number',
+  ca: 'number',
+  s: 'number',
+  k: 'number',
+  pmeh: 'number',
+  phcacl2: 'number',
+  nc_talhao: 'number',
+  nc: 'number',
   cultura: 'string',
-  classificacaoTextural: 'string',
+  classtext: 'string',
   delete: 'number',
   data: 'date',
   talhao: 'string',
@@ -123,6 +130,7 @@ const Index = () => {
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [selectedDate, setSelectedDate] = useState<Date>();
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
@@ -149,7 +157,9 @@ const Index = () => {
       const mappedValues: Record<string, any> = {};
       
       Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
-        if (excelColumn && row[excelColumn] !== undefined) {
+        if (dbField === 'data') {
+          mappedValues[dbField] = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
+        } else if (excelColumn && row[excelColumn] !== undefined) {
           mappedValues[dbField] = row[excelColumn];
         }
       });
@@ -163,7 +173,7 @@ const Index = () => {
         return value;
       });
       
-      const query = `INSERT INTO your_table_name (${fields.join(', ')}) VALUES (${values.join(', ')});`;
+      const query = `INSERT INTO analise (${fields.join(', ')}) VALUES (${values.join(', ')});`;
       queries.push(query);
     });
     
@@ -216,6 +226,9 @@ const Index = () => {
     if (field === 'delete') {
       return [0];
     }
+    if (field === 'data') {
+      return [];
+    }
     return columns;
   };
 
@@ -250,32 +263,58 @@ const Index = () => {
                       ({fieldTypes[field]})
                     </span>
                   </label>
-                  <Select
-                    value={columnMapping[field] || "none"}
-                    onValueChange={(value) => handleColumnMappingChange(field, value === "none" ? "" : value)}
-                  >
-                    <SelectTrigger id={`field-${field}`} className="w-full">
-                      <SelectValue placeholder="Selecione uma coluna" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {field === 'id_user' ? (
-                        ['JNA', 'CNP'].map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))
-                      ) : field === 'delete' ? (
-                        <SelectItem value="0">0</SelectItem>
-                      ) : (
-                        columns.map((column) => (
-                          <SelectItem key={column} value={column}>
-                            {column}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  {field === 'data' ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !selectedDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {selectedDate ? format(selectedDate, "PPP") : <span>Selecione uma data</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <Select
+                      value={columnMapping[field] || "none"}
+                      onValueChange={(value) => handleColumnMappingChange(field, value === "none" ? "" : value)}
+                    >
+                      <SelectTrigger id={`field-${field}`} className="w-full">
+                        <SelectValue placeholder="Selecione uma coluna" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {field === 'id_user' ? (
+                          ['JNA', 'CNP'].map(option => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))
+                        ) : field === 'delete' ? (
+                          <SelectItem value="0">0</SelectItem>
+                        ) : (
+                          columns.map((column) => (
+                            <SelectItem key={column} value={column}>
+                              {column}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               ))}
             </div>
