@@ -290,14 +290,14 @@ const Index = () => {
                     </span>
                   </label>
                   <Select
-                    value={columnMapping[field] || ''}
-                    onValueChange={(value) => handleColumnMappingChange(field, value)}
+                    value={columnMapping[field] || "none"}
+                    onValueChange={(value) => handleColumnMappingChange(field, value === "none" ? "" : value)}
                   >
                     <SelectTrigger id={`field-${field}`} className="w-full">
                       <SelectValue placeholder="Selecione uma coluna" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {columns.map((column) => (
                         <SelectItem key={column} value={column}>
                           {column}
