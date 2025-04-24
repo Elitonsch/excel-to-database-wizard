@@ -184,22 +184,24 @@ const Index = () => {
         Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
           if (excelColumn && row[excelColumn] !== undefined) {
             // Converter o tipo de dado conforme necessário
+            const typedField = dbField as keyof DatabaseSchema;
+            
             switch(fieldTypes[dbField]) {
               case 'number':
-                dbRow[dbField as keyof DatabaseSchema] = Number(row[excelColumn]) as any;
+                dbRow[typedField] = Number(row[excelColumn]);
                 break;
               case 'date':
                 // Se for uma data no formato de string, converte para o formato ISO
                 if (typeof row[excelColumn] === 'string') {
-                  dbRow[dbField as keyof DatabaseSchema] = new Date(row[excelColumn]).toISOString() as any;
+                  dbRow[typedField] = new Date(row[excelColumn]).toISOString();
                 } else if (row[excelColumn] instanceof Date) {
-                  dbRow[dbField as keyof DatabaseSchema] = row[excelColumn].toISOString() as any;
+                  dbRow[typedField] = row[excelColumn].toISOString();
                 } else {
-                  dbRow[dbField as keyof DatabaseSchema] = row[excelColumn] as any;
+                  dbRow[typedField] = row[excelColumn];
                 }
                 break;
               default:
-                dbRow[dbField as keyof DatabaseSchema] = String(row[excelColumn]) as any;
+                dbRow[typedField] = String(row[excelColumn]);
                 break;
             }
           }
