@@ -15,7 +15,6 @@ import {
 // Definindo o tipo para os campos do banco de dados
 interface DatabaseSchema {
   id_user: string;
-  id_produtor: number;
   codigo: string;
   areia: number;
   silte: number;
@@ -44,25 +43,13 @@ interface DatabaseSchema {
   cultura: string;
   classificacaoTextural: string;
   delete: number;
-  id_amostra: number;
-  fosfatagemHa: number;
-  fosfatagemTalhao: number;
-  potassioHa: number;
-  potassioTalhao: number;
   data: string;
   talhao: string;
-  assentamento: string;
-  cidade: string;
-  nome: string;
-  cpf: string;
-  propriedade: string;
-  area: number;
 }
 
 // Criar um array com os nomes dos campos para facilitar o mapeamento
 const dbFields = [
   'id_user',
-  'id_produtor',
   'codigo',
   'areia',
   'silte',
@@ -91,19 +78,8 @@ const dbFields = [
   'cultura',
   'classificacaoTextural',
   'delete',
-  'id_amostra',
-  'fosfatagemHa',
-  'fosfatagemTalhao',
-  'potassioHa',
-  'potassioTalhao',
   'data',
   'talhao',
-  'assentamento',
-  'cidade',
-  'nome',
-  'cpf',
-  'propriedade',
-  'area',
 ];
 
 type FieldType = 'string' | 'number' | 'date';
@@ -111,7 +87,6 @@ type FieldType = 'string' | 'number' | 'date';
 // Mapeamento dos tipos de cada campo
 const fieldTypes: Record<string, FieldType> = {
   id_user: 'string',
-  id_produtor: 'number',
   codigo: 'string',
   areia: 'number',
   silte: 'number',
@@ -140,19 +115,8 @@ const fieldTypes: Record<string, FieldType> = {
   cultura: 'string',
   classificacaoTextural: 'string',
   delete: 'number',
-  id_amostra: 'number',
-  fosfatagemHa: 'number',
-  fosfatagemTalhao: 'number',
-  potassioHa: 'number',
-  potassioTalhao: 'number',
   data: 'date',
   talhao: 'string',
-  assentamento: 'string',
-  cidade: 'string',
-  nome: 'string',
-  cpf: 'string',
-  propriedade: 'string',
-  area: 'number',
 };
 
 const Index = () => {
@@ -164,7 +128,7 @@ const Index = () => {
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
     setData(jsonData);
     setColumns(headers);
-    setColumnMapping({}); // Reset column mapping when new file is loaded
+    setColumnMapping({});
   };
 
   const handleColumnMappingChange = (dbField: string, excelColumn: string) => {
@@ -174,70 +138,57 @@ const Index = () => {
     });
   };
 
-  const handleImport = async () => {
+  const areAllFieldsMapped = () => {
+    return dbFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
+  };
+
+  const generateInsertQueries = () => {
+    const queries: string[] = [];
+    
+    data.forEach(row => {
+      const mappedValues: Record<string, any> = {};
+      
+      Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
+        if (excelColumn && row[excelColumn] !== undefined) {
+          mappedValues[dbField] = row[excelColumn];
+        }
+      });
+      
+      const fields = Object.keys(mappedValues);
+      const values = fields.map(field => {
+        const value = mappedValues[field];
+        if (fieldTypes[field] === 'string' || fieldTypes[field] === 'date') {
+          return `'${value}'`;
+        }
+        return value;
+      });
+      
+      const query = `INSERT INTO your_table_name (${fields.join(', ')}) VALUES (${values.join(', ')});`;
+      queries.push(query);
+    });
+    
+    return queries;
+  };
+
+  const handleImport = () => {
     try {
-      // Preparar os dados para inserção no PostgreSQL
-      const mappedData = data.map(row => {
-        const dbRow: Partial<DatabaseSchema> = {};
-        
-        // Aplicar o mapeamento de colunas
-        Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
-          if (excelColumn && row[excelColumn] !== undefined) {
-            // Converter o tipo de dado conforme necessário
-            const typedField = dbField as keyof DatabaseSchema;
-            
-            switch(fieldTypes[dbField]) {
-              case 'number':
-                dbRow[typedField] = Number(row[excelColumn]);
-                break;
-              case 'date':
-                // Se for uma data no formato de string, converte para o formato ISO
-                if (typeof row[excelColumn] === 'string') {
-                  dbRow[typedField] = new Date(row[excelColumn]).toISOString();
-                } else if (row[excelColumn] instanceof Date) {
-                  dbRow[typedField] = row[excelColumn].toISOString();
-                } else {
-                  dbRow[typedField] = row[excelColumn];
-                }
-                break;
-              default:
-                dbRow[typedField] = String(row[excelColumn]);
-                break;
-            }
-          }
+      if (!areAllFieldsMapped()) {
+        toast({
+          title: "Erro",
+          description: "Por favor, mapeie todos os campos antes de prosseguir.",
+          variant: "destructive",
         });
-        
-        return dbRow;
-      });
-      
-      console.log('Dados preparados para serem inseridos no PostgreSQL:', mappedData);
-      
-      // Simular a chamada para a API que inserirá os dados no PostgreSQL
-      // Na implementação real, você substituirá isso por uma chamada real para sua API
-      /*
-      const response = await fetch('/api/importData', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: mappedData }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Falha ao inserir dados no banco de dados');
+        return;
       }
+
+      const insertQueries = generateInsertQueries();
+      console.log('Queries SQL geradas:', insertQueries.join('\n'));
       
-      const result = await response.json();
-      */
-      
-      // Simulação bem-sucedida
       toast({
         title: "Sucesso",
-        description: `${mappedData.length} registros prontos para inserção no PostgreSQL. Veja o console para detalhes.`,
+        description: `${data.length} registros processados. Verifique o console para ver as queries SQL.`,
       });
       
-      // Resetar o estado após a importação bem-sucedida
-      setData([]);
-      setColumns([]);
-      setColumnMapping({});
     } catch (error) {
       console.error('Erro durante a importação:', error);
       toast({
@@ -255,7 +206,17 @@ const Index = () => {
   };
 
   const getMappedFieldsCount = () => {
-    return Object.keys(columnMapping).filter(key => columnMapping[key] !== '').length;
+    return Object.keys(columnMapping).filter(key => columnMapping[key] && columnMapping[key] !== 'none').length;
+  };
+
+  const getFieldOptions = (field: string) => {
+    if (field === 'id_user') {
+      return ['JNA', 'CNP'];
+    }
+    if (field === 'delete') {
+      return [0];
+    }
+    return columns;
   };
 
   return (
@@ -298,11 +259,21 @@ const Index = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhum</SelectItem>
-                      {columns.map((column) => (
-                        <SelectItem key={column} value={column}>
-                          {column}
-                        </SelectItem>
-                      ))}
+                      {field === 'id_user' ? (
+                        ['JNA', 'CNP'].map(option => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))
+                      ) : field === 'delete' ? (
+                        <SelectItem value="0">0</SelectItem>
+                      ) : (
+                        columns.map((column) => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -316,11 +287,11 @@ const Index = () => {
             </p>
             <Button
               onClick={handleImport}
-              disabled={getMappedFieldsCount() === 0}
+              disabled={!areAllFieldsMapped()}
               className="gap-2"
             >
               <Database className="w-4 h-4" />
-              Importar para o PostgreSQL
+              Gerar Queries SQL
             </Button>
           </div>
         </div>
