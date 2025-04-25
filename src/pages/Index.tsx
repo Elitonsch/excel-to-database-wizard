@@ -71,7 +71,6 @@ interface Produtor {
   delete: number;
 }
 
-// Interface for paginated response
 interface ProdutorResponse {
   content: Produtor[];
   page: {
@@ -452,10 +451,13 @@ const Index = () => {
           },
         }
       );
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar produtor: ${response.status}`);
+      }
+
       const responseData: ProdutorResponse = await response.json();
-      console.log(responseData);
       
-      // Check if any producers were found
       if (responseData.content.length === 0) {
         throw new Error('Nenhum produtor encontrado com o CPF informado');
       }
@@ -467,28 +469,29 @@ const Index = () => {
       mappedValues['id_user'] = selectedIdUser;
       const selectedCulturaAtual = columnMapping['culturaatual'];
       const selectedCulturaImplementar = columnMapping['culturaimplementar'];
-      mappedValues['culturaatual']=selectedCulturaAtual;
-      mappedValues['culturaimplementar']=selectedCulturaImplementar;
+      mappedValues['culturaatual'] = selectedCulturaAtual;
+      mappedValues['culturaimplementar'] = selectedCulturaImplementar;
       mappedValues['assentamento'] = produtor.assentamento;
       mappedValues['propriedade'] = produtor.propriedade;
-      mappedValues['nome'] = produtor.nome.trim()+' '+produtor.sobrenome.trim();
+      mappedValues['nome'] = produtor.nome.trim() + ' ' + produtor.sobrenome.trim();
       mappedValues['sobrenome'] = produtor.sobrenome;
       mappedValues['telefone'] = produtor.telefone;
       mappedValues['email'] = produtor.email;
       mappedValues['cidade'] = produtor.cidade;
       mappedValues['delete'] = produtor.delete;
+
+      return mappedValues;
+
     } catch (error) {
-      console.error('Erro ao buscar amostra:', error);
+      console.error('Erro ao buscar produtor:', error);
       toast({
-        title: "Erro ao buscar amostra",
-        description: "Verifique as informações e tente novamente.",
+        title: "Erro ao buscar produtor",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao buscar produtor",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
+      throw error; // Re-throw the error to stop the process
     }
-
-    return mappedValues;
   };
 
   const transformToApiFormat = (mappedValues: Record<string, any>) => {
@@ -735,13 +738,24 @@ const Index = () => {
             continue;
           }
 
-          let finalValues = mappedValues;
-          if (activeTab === "analises") {
-            finalValues = await adicionarDados(mappedValues);
-          }else{
-            finalValues=await adicionarDadosAmostra(mappedValues);
+          let finalValues;
+          try {
+            if (activeTab === "analises") {
+              finalValues = await adicionarDados(mappedValues);
+            } else {
+              finalValues = await adicionarDadosAmostra(mappedValues);
+            }
+          } catch (error) {
+            console.error('Erro ao adicionar dados:', error);
+            setImportProgress(prev => ({
+              total: prev.total,
+              processed: prev.processed + 1,
+              success: prev.success,
+              failed: prev.failed + 1
+            }));
+            break; // Stop the process if there's an error
           }
-          
+
           const apiData = transformToApiFormat(finalValues);
           const result = await submitToApi(apiData);
           results.push({ success: true, data: result });
@@ -760,6 +774,7 @@ const Index = () => {
             processed: prev.processed + 1,
             failed: prev.failed + 1
           }));
+          break; // Stop the process if there's an error
         }
       }
 
