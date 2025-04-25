@@ -57,6 +57,31 @@ interface AmostraResponse {
   area: number;
 }
 
+interface Produtor {
+  id: number;
+  id_user: string;
+  nome: string;
+  sobrenome: string;
+  cpf: string;
+  telefone: string;
+  email: string;
+  cidade: string;
+  assentamento: string;
+  propriedade: string;
+  delete: number;
+}
+
+// Interface for paginated response
+interface ProdutorResponse {
+  content: Produtor[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
 interface SoilAnalysis {
   id_user: string;
   id_produtor: number | null;
@@ -186,6 +211,7 @@ const Index = () => {
     email: "",
     senha: ""
   });
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [importProgress, setImportProgress] = useState<{
     total: number;
@@ -257,7 +283,7 @@ const Index = () => {
   const getCurrentDbFields = () => {
     return activeTab === "analises" ? 
       ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo'] :
-      ['id_user', 'id_produtor', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar', 'informacoes', 'pontos', 'assentamento', 'nome', 'cpf'];
+      ['id_user', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar','cpf'];
   };
 
   const getCurrentFieldTypes = () => {
@@ -294,18 +320,13 @@ const Index = () => {
       } : 
       {
         id_user: 'string',
-        id_produtor: 'number',
         codigo: 'string',
         talhao: 'string',
         area: 'number',
         culturaatual: 'string',
         culturaimplementar: 'string',
         delete: 'number',
-        informacoes: 'string',
-        pontos: 'string',
-        assentamento: 'string',
         data: 'date',
-        nome: 'string',
         cpf: 'string',
       };
   };
@@ -313,7 +334,7 @@ const Index = () => {
   const areRequiredFieldsMapped = () => {
     const allFields = activeTab === "analises" ? 
       ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo'] :
-      ['id_user', 'id_produtor', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar', 'informacoes', 'pontos', 'assentamento', 'nome', 'cpf'];
+      ['id_user', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar','cpf'];
     
     return allFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
   };
@@ -405,6 +426,57 @@ const Index = () => {
       mappedValues['propriedade']=authData.propriedade;
       mappedValues['area']=authData.area;
 
+    } catch (error) {
+      console.error('Erro ao buscar amostra:', error);
+      toast({
+        title: "Erro ao buscar amostra",
+        description: "Verifique as informações e tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+
+    return mappedValues;
+  };
+
+  const adicionarDadosAmostra = async (mappedValues: Record<string, any>) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://solifbackend-development.up.railway.app/solovivo/produtor/filter/pagina?nome=${mappedValues['cpf']}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': authToken,
+          },
+        }
+      );
+      const responseData: ProdutorResponse = await response.json();
+      console.log(responseData);
+      
+      // Check if any producers were found
+      if (responseData.content.length === 0) {
+        throw new Error('Nenhum produtor encontrado com o CPF informado');
+      }
+
+      const produtor = responseData.content[0];
+      console.log(produtor);
+      mappedValues['id_produtor'] = produtor.id;
+      const selectedIdUser = columnMapping['id_user'];
+      mappedValues['id_user'] = selectedIdUser;
+      const selectedCulturaAtual = columnMapping['culturaatual'];
+      const selectedCulturaImplementar = columnMapping['culturaimplementar'];
+      mappedValues['culturaatual']=selectedCulturaAtual;
+      mappedValues['culturaimplementar']=selectedCulturaImplementar;
+      mappedValues['assentamento'] = produtor.assentamento;
+      mappedValues['propriedade'] = produtor.propriedade;
+      mappedValues['nome'] = produtor.nome.trim()+' '+produtor.sobrenome.trim();
+      mappedValues['sobrenome'] = produtor.sobrenome;
+      mappedValues['telefone'] = produtor.telefone;
+      mappedValues['email'] = produtor.email;
+      mappedValues['cidade'] = produtor.cidade;
+      mappedValues['delete'] = produtor.delete;
     } catch (error) {
       console.error('Erro ao buscar amostra:', error);
       toast({
@@ -666,6 +738,8 @@ const Index = () => {
           let finalValues = mappedValues;
           if (activeTab === "analises") {
             finalValues = await adicionarDados(mappedValues);
+          }else{
+            finalValues=await adicionarDadosAmostra(mappedValues);
           }
           
           const apiData = transformToApiFormat(finalValues);
@@ -742,7 +816,7 @@ const Index = () => {
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8 text-center">Importador de Planilhas</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center">Importador - Dayane</h1>
         
         <div className="max-w-md mx-auto bg-white p-6 border rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Autenticação</h2>
@@ -785,7 +859,7 @@ const Index = () => {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8 text-center">Importador de Planilhas</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center">Importador - Dayane</h1>
       
       {!data.length ? (
         <FileUpload onFileLoaded={handleFileLoaded} />
@@ -847,6 +921,7 @@ const Index = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {getCurrentDbFields()
                     .filter(field => field !== 'data' && field !== 'delete')
+                    
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
@@ -873,6 +948,18 @@ const Index = () => {
                             ))
                           ) : field === 'delete' ? (
                             <SelectItem value="0">0</SelectItem>
+                          ) : field === 'culturaatual' ? (
+                            ['Forrageira', 'Milho'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : field === 'culturaimplementar' ? (
+                            ['Forrageira', 'Milho'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
                           ) : (
                             columns.map((column) => (
                               <SelectItem key={column} value={column}>
@@ -947,13 +1034,25 @@ const Index = () => {
                         <SelectContent>
                           <SelectItem value="none">Nenhum</SelectItem>
                           {field === 'id_user' ? (
-                            ['JNA', 'CNP'].map(option => (
+                            ['hgTIwKKbG8W56W5HX7q7iU85g562'].map(option => (
                               <SelectItem key={option} value={option}>
                                 {option}
                               </SelectItem>
                             ))
                           ) : field === 'delete' ? (
                             <SelectItem value="0">0</SelectItem>
+                          ) : field === 'culturaatual' ? (
+                            ['Forrageira', 'Milho'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : field === 'culturaimplementar' ? (
+                            ['Forrageira', 'Milho'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
                           ) : (
                             columns.map((column) => (
                               <SelectItem key={column} value={column}>
