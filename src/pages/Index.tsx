@@ -61,38 +61,38 @@ interface SoilAnalysis {
   id_user: string;
   id_produtor: number | null;
   codigo: string;
-  areia: number | null;
-  argila: number | null;
+  areia_total: number | null;
   silte: number | null;
-  zinco: number | null;
-  manganes: number | null;
-  ferro: number | null;
-  cobre: number | null;
-  boro: number | null;
-  saturacaoAluminio: number | null;
-  saturacaoBases: number | null;
+  argila: number | null;
+  zn: number | null;
+  mn: number | null;
+  fe: number | null;
+  cu: number | null;
+  b: number | null;
+  m: number | null;
+  v: number | null;
   ctcph: number | null;
-  ctcEfetiva: number | null;
-  somaBases: number | null;
-  materiaOrganica: number | null;
-  hidrogenioAluminio: number | null;
-  aluminio: number | null;
-  magnesio: number | null;
-  calcio: number | null;
-  enxofre: number | null;
-  potassio: number | null;
-  fosforoMehlich: number | null;
-  phCacl: number | null;
-  necessidadeCalagemTalhao: number | null;
-  necessidadeCalagemHa: number | null;
+  ctc: number | null;
+  sb: number | null;
+  mo: number | null;
+  hal: number | null;
+  al3: number | null;
+  mg: number | null;
+  ca: number | null;
+  s: number | null;
+  k: number | null;
+  pmeh: number | null;
+  phcacl2: number | null;
+  nc_talhao: number | null;
+  nc: number | null;
   cultura: string | null;
-  classificacaoTextural: string | null;
+  classtext: string | null;
   delete: number;
   id_amostra: number | null;
-  fosfatagemHa: number | null;
-  fosfatagemTalhao: number | null;
-  potassioHa: number | null;
-  potassioTalhao: number | null;
+  fosfatagem: number | null;
+  fosfatagem_talhao: number | null;
+  potassio: number | null;
+  potassio_talhao: number | null;
   data: string;
   talhao: string | null;
   assentamento: string | null;
@@ -112,7 +112,7 @@ interface SoilSample {
   culturaatual: string | null;
   culturaimplementar: string | null;
   delete: number;
-  informacoes: string | null;
+  infos: string | null;
   pontos: string | null;
   assentamento: string | null;
   data: string;
@@ -120,153 +120,10 @@ interface SoilSample {
   cpf: string | null;
 }
 
-const analiseFieldMapping = {
-  'id_user': 'id_user',
-  'cod': 'codigo',
-  'areia_total': 'areia_total',
-  'silte': 'silte',
-  'argila': 'argila',
-  'zn': 'zn',
-  'mn': 'mn',
-  'fe': 'fe',
-  'cu': 'cu',
-  'b': 'b',
-  'm': 'm',
-  'v': 'v',
-  'ctcph': 'ctcph',
-  'ctc': 'ctc',
-  'sb': 'sb',
-  'mo': 'mo',
-  'hal': 'hal',
-  'al3': 'al3',
-  'mg': 'mg',
-  'ca': 'ca',
-  's': 's',
-  'k': 'k',
-  'pmeh': 'pmeh',
-  'phcacl2': 'phcacl2',
-  'cultura': 'cultura',
-  'classtext': 'classtext',
-  'delete': 'delete',
-  'data': 'data',
-};
-
-const amostraFieldMapping = {
-  'id_user': 'id_user',
-  'id_produtor': 'id_produtor',
-  'codigo': 'codigo',
-  'talhao': 'talhao',
-  'area': 'area',
-  'culturaatual': 'culturaatual',
-  'culturaimplementar': 'culturaimplementar',
-  'delete': 'delete',
-  'informacoes': 'infos',
-  'pontos': 'pontos',
-  'assentamento': 'assentamento',
-  'data': 'data',
-  'nome': 'nome',
-  'cpf': 'cpf',
-};
-
-const analiseDbFields = [
-  'id_user',
-  'cod',
-  'areia_total',
-  'silte',
-  'argila',
-  'zn',
-  'mn',
-  'fe',
-  'cu',
-  'b',
-  'hal',
-  'al3',
-  'mg',
-  'ca',
-  's',
-  'k',
-  'pmeh',
-  'phcacl2',
-  'mo',
-  'delete',
-  'data',
-];
-
-const calculatedFields = [
-  'sb',
-  'ctc',
-  'ctcph',
-  'v',
-  'm',
-  'classtext'
-];
-
-const amostraDbFields = [
-  'id_user',
-  'id_produtor',
-  'codigo',
-  'talhao',
-  'area',
-  'culturaatual',
-  'culturaimplementar',
-  'delete',
-  'informacoes',
-  'pontos',
-  'assentamento',
-  'data',
-  'nome',
-  'cpf',
-];
-
-type FieldType = 'string' | 'number' | 'date';
-
-const analiseFieldTypes: Record<string, FieldType> = {
-  id_user: 'string',
-  cod: 'string',
-  areia_total: 'number',
-  silte: 'number',
-  argila: 'number',
-  zn: 'number',
-  mn: 'number',
-  fe: 'number',
-  cu: 'number',
-  b: 'number',
-  m: 'number',
-  v: 'number',
-  ctcph: 'number',
-  ctc: 'number',
-  sb: 'number',
-  mo: 'number',
-  hal: 'number',
-  al3: 'number',
-  mg: 'number',
-  ca: 'number',
-  s: 'number',
-  k: 'number',
-  pmeh: 'number',
-  phcacl2: 'number',
-  cultura: 'string',
-  classtext: 'string',
-  delete: 'number',
-  data: 'date',
-};
-
-const amostraFieldTypes: Record<string, FieldType> = {
-  id_user: 'string',
-  id_produtor: 'number',
-  codigo: 'string',
-  talhao: 'string',
-  area: 'number',
-  culturaatual: 'string',
-  culturaimplementar: 'string',
-  delete: 'number',
-  informacoes: 'string',
-  pontos: 'string',
-  assentamento: 'string',
-  data: 'date',
-  nome: 'string',
-  cpf: 'string',
-};
+interface DuplicateItem {
+  codigo: string;
+  tipo: 'analise' | 'amostra';
+}
 
 const classTextura = (areia: number, argila: number, silte: number) => {
   let texturaSolo;
@@ -317,11 +174,6 @@ const classTextura = (areia: number, argila: number, silte: number) => {
 
   return texturaSolo;
 };
-
-interface DuplicateItem {
-  codigo: string;
-  tipo: 'analise' | 'amostra';
-}
 
 const Index = () => {
   const [data, setData] = useState<any[]>([]);
@@ -403,11 +255,59 @@ const Index = () => {
   };
 
   const getCurrentDbFields = () => {
-    return activeTab === "analises" ? analiseDbFields : amostraDbFields;
+    return activeTab === "analises" ? 
+      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo', 'delete', 'data'] :
+      ['id_user', 'id_produtor', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar', 'delete', 'informacoes', 'pontos', 'assentamento', 'data', 'nome', 'cpf'];
   };
 
   const getCurrentFieldTypes = () => {
-    return activeTab === "analises" ? analiseFieldTypes : amostraFieldTypes;
+    return activeTab === "analises" ? 
+      {
+        id_user: 'string',
+        cod: 'string',
+        areia_total: 'number',
+        silte: 'number',
+        argila: 'number',
+        zn: 'number',
+        mn: 'number',
+        fe: 'number',
+        cu: 'number',
+        b: 'number',
+        m: 'number',
+        v: 'number',
+        ctcph: 'number',
+        ctc: 'number',
+        sb: 'number',
+        mo: 'number',
+        hal: 'number',
+        al3: 'number',
+        mg: 'number',
+        ca: 'number',
+        s: 'number',
+        k: 'number',
+        pmeh: 'number',
+        phcacl2: 'number',
+        cultura: 'string',
+        classtext: 'string',
+        delete: 'number',
+        data: 'date',
+      } : 
+      {
+        id_user: 'string',
+        id_produtor: 'number',
+        codigo: 'string',
+        talhao: 'string',
+        area: 'number',
+        culturaatual: 'string',
+        culturaimplementar: 'string',
+        delete: 'number',
+        informacoes: 'string',
+        pontos: 'string',
+        assentamento: 'string',
+        data: 'date',
+        nome: 'string',
+        cpf: 'string',
+      };
   };
 
   const areRequiredFieldsMapped = () => {
@@ -486,7 +386,7 @@ const Index = () => {
         {
           method: 'GET',
           headers: {
-            'Authorization': authToken
+            'Authorization': authToken || '',
           },
         }
       );
@@ -526,38 +426,38 @@ const Index = () => {
         id_user: '',
         id_produtor: null,
         codigo: '',
-        areia: null,
+        areia_total: null,
         silte: null,
         argila: null,
-        zinco: null,
-        manganes: null,
-        ferro: null,
-        cobre: null,
-        boro: null,
-        saturacaoAluminio: null,
-        saturacaoBases: null,
+        zn: null,
+        mn: null,
+        fe: null,
+        cu: null,
+        b: null,
+        m: null,
+        v: null,
         ctcph: null,
-        ctcEfetiva: null,
-        somaBases: null,
-        materiaOrganica: null,
-        hidrogenioAluminio: null,
-        aluminio: null,
-        magnesio: null,
-        calcio: null,
-        enxofre: null,
-        potassio: null,
-        fosforoMehlich: null,
-        phCacl: null,
-        necessidadeCalagemTalhao: null,
-        necessidadeCalagemHa: null,
+        ctc: null,
+        sb: null,
+        mo: null,
+        hal: null,
+        al3: null,
+        mg: null,
+        ca: null,
+        s: null,
+        k: null,
+        pmeh: null,
+        phcacl2: null,
+        nc_talhao: null,
+        nc: null,
         cultura: null,
-        classificacaoTextural: null,
+        classtext: null,
         delete: 0,
         id_amostra: null,
-        fosfatagemHa: null,
-        fosfatagemTalhao: null,
-        potassioHa: null,
-        potassioTalhao: null,
+        fosfatagem: null,
+        fosfatagem_talhao: null,
+        potassio: null,
+        potassio_talhao: null,
         data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
         talhao: null,
         assentamento: null,
@@ -568,12 +468,48 @@ const Index = () => {
         area: null
       };
 
-      Object.entries(mappedValues).forEach(([field, value]) => {
-        const apiField = analiseFieldMapping[field as keyof typeof analiseFieldMapping];
-        if (apiField) {
-          (apiData as any)[apiField] = value;
-        }
-      });
+      if (mappedValues['id_user']) apiData.id_user = mappedValues['id_user'];
+      if (mappedValues['id_produtor']) apiData.id_produtor = mappedValues['id_produtor'];
+      if (mappedValues['cod']) apiData.codigo = mappedValues['cod'];
+      if (mappedValues['areia_total'] !== undefined) apiData.areia_total = mappedValues['areia_total'];
+      if (mappedValues['silte'] !== undefined) apiData.silte = mappedValues['silte'];
+      if (mappedValues['argila'] !== undefined) apiData.argila = mappedValues['argila'];
+      if (mappedValues['zn'] !== undefined) apiData.zn = mappedValues['zn'];
+      if (mappedValues['mn'] !== undefined) apiData.mn = mappedValues['mn'];
+      if (mappedValues['fe'] !== undefined) apiData.fe = mappedValues['fe'];
+      if (mappedValues['cu'] !== undefined) apiData.cu = mappedValues['cu'];
+      if (mappedValues['b'] !== undefined) apiData.b = mappedValues['b'];
+      if (mappedValues['m'] !== undefined) apiData.m = mappedValues['m'];
+      if (mappedValues['v'] !== undefined) apiData.v = mappedValues['v'];
+      if (mappedValues['ctcph'] !== undefined) apiData.ctcph = mappedValues['ctcph'];
+      if (mappedValues['ctc'] !== undefined) apiData.ctc = mappedValues['ctc'];
+      if (mappedValues['sb'] !== undefined) apiData.sb = mappedValues['sb'];
+      if (mappedValues['mo'] !== undefined) apiData.mo = mappedValues['mo'];
+      if (mappedValues['hal'] !== undefined) apiData.hal = mappedValues['hal'];
+      if (mappedValues['al3'] !== undefined) apiData.al3 = mappedValues['al3'];
+      if (mappedValues['mg'] !== undefined) apiData.mg = mappedValues['mg'];
+      if (mappedValues['ca'] !== undefined) apiData.ca = mappedValues['ca'];
+      if (mappedValues['s'] !== undefined) apiData.s = mappedValues['s'];
+      if (mappedValues['k'] !== undefined) apiData.k = mappedValues['k'];
+      if (mappedValues['pmeh'] !== undefined) apiData.pmeh = mappedValues['pmeh'];
+      if (mappedValues['phcacl2'] !== undefined) apiData.phcacl2 = mappedValues['phcacl2'];
+      if (mappedValues['nc_talhao'] !== undefined) apiData.nc_talhao = mappedValues['nc_talhao'];
+      if (mappedValues['nc'] !== undefined) apiData.nc = mappedValues['nc'];
+      if (mappedValues['cultura']) apiData.cultura = mappedValues['cultura'];
+      if (mappedValues['classtext']) apiData.classtext = mappedValues['classtext'];
+      if (mappedValues['delete'] !== undefined) apiData.delete = mappedValues['delete'];
+      if (mappedValues['id_amostra']) apiData.id_amostra = mappedValues['id_amostra'];
+      if (mappedValues['fosfatagem'] !== undefined) apiData.fosfatagem = mappedValues['fosfatagem'];
+      if (mappedValues['fosfatagem_talhao'] !== undefined) apiData.fosfatagem_talhao = mappedValues['fosfatagem_talhao'];
+      if (mappedValues['potassio'] !== undefined) apiData.potassio = mappedValues['potassio'];
+      if (mappedValues['potassio_talhao'] !== undefined) apiData.potassio_talhao = mappedValues['potassio_talhao'];
+      if (mappedValues['talhao']) apiData.talhao = mappedValues['talhao'];
+      if (mappedValues['assentamento']) apiData.assentamento = mappedValues['assentamento'];
+      if (mappedValues['cidade']) apiData.cidade = mappedValues['cidade'];
+      if (mappedValues['nome']) apiData.nome = mappedValues['nome'];
+      if (mappedValues['cpf']) apiData.cpf = mappedValues['cpf'];
+      if (mappedValues['propriedade']) apiData.propriedade = mappedValues['propriedade'];
+      if (mappedValues['area'] !== undefined) apiData.area = mappedValues['area'];
 
       return apiData;
     } else {
@@ -586,7 +522,7 @@ const Index = () => {
         culturaatual: null,
         culturaimplementar: null,
         delete: 0,
-        informacoes: null,
+        infos: null,
         pontos: null,
         assentamento: null,
         data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
@@ -594,12 +530,19 @@ const Index = () => {
         cpf: null
       };
 
-      Object.entries(mappedValues).forEach(([field, value]) => {
-        const apiField = amostraFieldMapping[field as keyof typeof amostraFieldMapping];
-        if (apiField) {
-          (apiData as any)[apiField] = value;
-        }
-      });
+      if (mappedValues['id_user']) apiData.id_user = mappedValues['id_user'];
+      if (mappedValues['id_produtor']) apiData.id_produtor = mappedValues['id_produtor'];
+      if (mappedValues['codigo']) apiData.codigo = mappedValues['codigo'];
+      if (mappedValues['talhao']) apiData.talhao = mappedValues['talhao'];
+      if (mappedValues['area'] !== undefined) apiData.area = mappedValues['area'];
+      if (mappedValues['culturaatual']) apiData.culturaatual = mappedValues['culturaatual'];
+      if (mappedValues['culturaimplementar']) apiData.culturaimplementar = mappedValues['culturaimplementar'];
+      if (mappedValues['delete'] !== undefined) apiData.delete = mappedValues['delete'];
+      if (mappedValues['informacoes']) apiData.infos = mappedValues['informacoes'];
+      if (mappedValues['pontos']) apiData.pontos = mappedValues['pontos'];
+      if (mappedValues['assentamento']) apiData.assentamento = mappedValues['assentamento'];
+      if (mappedValues['nome']) apiData.nome = mappedValues['nome'];
+      if (mappedValues['cpf']) apiData.cpf = mappedValues['cpf'];
 
       return apiData;
     }
@@ -692,21 +635,26 @@ const Index = () => {
       });
 
       const results = [];
+      const newDuplicates: DuplicateItem[] = [];
+      
       for (let i = 0; i < data.length; i++) {
         try {
           const row = data[i];
           const mappedValues = calculateDerivedFields(row);
           
+          const codeField = activeTab === 'analises' ? 'cod' : 'codigo';
+          const code = mappedValues[codeField];
+          
           const itemExists = await checkItemExists(
-            mappedValues['cod'] || mappedValues['codigo'], 
+            code, 
             activeTab === 'analises' ? 'analise' : 'amostra'
           );
 
           if (itemExists) {
-            setDuplicateItems(prev => [...prev, {
-              codigo: mappedValues['cod'] || mappedValues['codigo'],
+            newDuplicates.push({
+              codigo: code,
               tipo: activeTab === 'analises' ? 'analise' : 'amostra'
-            }]);
+            });
             
             setImportProgress(prev => ({
               ...prev,
@@ -742,12 +690,13 @@ const Index = () => {
         }
       }
 
+      setDuplicateItems(newDuplicates);
       const successCount = results.filter(r => r.success).length;
       
-      if (duplicateItems.length > 0) {
+      if (newDuplicates.length > 0) {
         toast({
-          title: "Itens já cadastrados",
-          description: `${duplicateItems.length} ${activeTab === 'analises' ? 'análises' : 'amostras'} não foram inseridas por já estarem cadastradas: ${duplicateItems.map(item => item.codigo).join(', ')}`,
+          title: `${newDuplicates.length} ${activeTab === 'analises' ? 'análises' : 'amostras'} já cadastradas`,
+          description: `Os seguintes itens não foram inseridos pois já estão cadastrados: ${newDuplicates.map(item => item.codigo).join(', ')}`,
           variant: "destructive",
         });
       }
@@ -755,7 +704,7 @@ const Index = () => {
       toast({
         title: "Importação concluída",
         description: `${successCount} de ${data.length} registros importados com sucesso.`,
-        variant: successCount === data.length ? "default" : "destructive",
+        variant: successCount === 0 ? "destructive" : "default",
       });
       
     } catch (error) {
@@ -789,16 +738,6 @@ const Index = () => {
     return Object.keys(columnMapping)
       .filter(key => currentDbFields.includes(key) && columnMapping[key] && columnMapping[key] !== 'none')
       .length;
-  };
-
-  const getFieldOptions = (field: string) => {
-    if (field === 'id_user') {
-      return ['JNA', 'CNP'];
-    }
-    if (field === 'delete') {
-      return [0];
-    }
-    return columns;
   };
 
   if (!isAuthenticated) {
@@ -871,7 +810,7 @@ const Index = () => {
               <TabsContent value="analises" className="space-y-4">
                 <p className="mb-4 text-sm text-gray-600">
                   Selecione a coluna da planilha que corresponde a cada campo do banco de dados. 
-                  Você mapeou {getMappedFieldsCount()} de {analiseDbFields.length} campos.
+                  Você mapeou {getMappedFieldsCount()} de {getCurrentDbFields().length} campos.
                 </p>
                 
                 <div className="mb-6">
@@ -907,14 +846,14 @@ const Index = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {analiseDbFields
+                  {getCurrentDbFields()
                     .filter(field => field !== 'data')
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
                         {field}
                         <span className="text-xs text-gray-500 ml-1">
-                          ({analiseFieldTypes[field]})
+                          ({getCurrentFieldTypes()[field]})
                           {field === 'id_user' || field === 'cod' ? ' (obrigatório)' : ''}
                         </span>
                       </label>
@@ -952,7 +891,7 @@ const Index = () => {
               <TabsContent value="amostras" className="space-y-4">
                 <p className="mb-4 text-sm text-gray-600">
                   Selecione a coluna da planilha que corresponde a cada campo da amostra. 
-                  Você mapeou {getMappedFieldsCount()} de {amostraDbFields.length} campos.
+                  Você mapeou {getMappedFieldsCount()} de {getCurrentDbFields().length} campos.
                 </p>
                 
                 <div className="mb-6">
@@ -988,14 +927,14 @@ const Index = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {amostraDbFields
+                  {getCurrentDbFields()
                     .filter(field => field !== 'data')
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
                         {field}
                         <span className="text-xs text-gray-500 ml-1">
-                          ({amostraFieldTypes[field]})
+                          ({getCurrentFieldTypes()[field]})
                           {field === 'id_user' || field === 'codigo' ? ' (obrigatório)' : ''}
                         </span>
                       </label>
@@ -1050,6 +989,22 @@ const Index = () => {
                   <p>Falhas: {importProgress.failed}</p>
                   <p>Restantes: {importProgress.total - importProgress.processed}</p>
                 </div>
+              </div>
+            </div>
+          )}
+          
+          {duplicateItems.length > 0 && (
+            <div className="bg-white p-4 border rounded-lg border-amber-500">
+              <h3 className="text-lg font-medium mb-2 text-amber-700">Itens já cadastrados</h3>
+              <p className="text-sm text-gray-700 mb-2">
+                Os seguintes códigos já estão cadastrados no sistema:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {duplicateItems.map((item, index) => (
+                  <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
+                    {item.codigo}
+                  </span>
+                ))}
               </div>
             </div>
           )}
