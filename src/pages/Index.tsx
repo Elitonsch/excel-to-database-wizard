@@ -1,11 +1,8 @@
-
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
-import { Database, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Database, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -13,48 +10,138 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-// Database schema with updated field names
-interface DatabaseSchema {
-  id_user: string;
-  cod: string;
-  areia_total: number;
-  silte: number;
-  argila: number;
-  zn: number;
-  mn: number;
-  fe: number;
-  cu: number;
-  b: number;
-  m: number;
-  v: number;
-  ctcph: number;
-  ctc: number;
-  sb: number;
-  mo: number;
-  hal: number;
-  al3: number;
-  mg: number;
-  ca: number;
-  s: number;
-  k: number;
-  pmeh: number;
-  phcacl2: number;
-  nc_talhao: number;
-  nc: number;
-  cultura: string;
-  classtext: string;
-  delete: number;
-  data: Date;
-  talhao: string;
+// Interface para os dados de autenticação
+interface AuthCredentials {
+  email: string;
+  senha: string;
 }
 
-// Updated array with the new field names
+// Interface para os dados de autenticação retornados pela API
+interface AuthResponse {
+  id: number;
+  id_user: string;
+  nome: string;
+  email: string;
+  aparelho: string;
+  assentamento: string;
+  token: string;
+}
+
+interface AmostraResponse {
+  id: number;
+  id_produtor: number;
+  talhao: string;
+  nome: string;
+  assentamento: string;
+  cidade: string;
+  sobrenome: string;
+  cpf: string;
+  propriedade: string;
+  area: number;
+}
+
+// Interface para os dados do banco de dados baseado na entidade Analise
+interface SoilAnalysis {
+  id_user: string;
+  id_produtor: number | null;
+  codigo: string;
+  areia: number | null;
+  argila: number | null;
+  silte: number | null;
+  zinco: number | null;
+  manganes: number | null;
+  ferro: number | null;
+  cobre: number | null;
+  boro: number | null;
+  saturacaoAluminio: number | null;
+  saturacaoBases: number | null;
+  ctcph: number | null;
+  ctcEfetiva: number | null;
+  somaBases: number | null;
+  materiaOrganica: number | null;
+  hidrogenioAluminio: number | null;
+  aluminio: number | null;
+  magnesio: number | null;
+  calcio: number | null;
+  enxofre: number | null;
+  potassio: number | null;
+  fosforoMehlich: number | null;
+  phCacl: number | null;
+  necessidadeCalagemTalhao: number | null;
+  necessidadeCalagemHa: number | null;
+  cultura: string | null;
+  classificacaoTextural: string | null;
+  delete: number;
+  id_amostra: number | null;
+  fosfatagemHa: number | null;
+  fosfatagemTalhao: number | null;
+  potassioHa: number | null;
+  potassioTalhao: number | null;
+  data: string;
+  talhao: string | null;
+  assentamento: string | null;
+  cidade: string | null;
+  nome: string | null;
+  cpf: string | null;
+  propriedade: string | null;
+  area: number | null;
+}
+
+// Mapeamento dos campos do banco original para a nova API
+const fieldMapping = {
+  'id_user': 'id_user',
+  'cod': 'codigo',
+  'areia_total': 'areia',
+  'silte': 'silte',
+  'argila': 'argila',
+  'zn': 'zinco',
+  'mn': 'manganes',
+  'fe': 'ferro',
+  'cu': 'cobre',
+  'b': 'boro',
+  'm': 'saturacaoAluminio',
+  'v': 'saturacaoBases',
+  'ctcph': 'ctcph',
+  'ctc': 'ctcEfetiva',
+  'sb': 'somaBases',
+  'mo': 'materiaOrganica',
+  'hal': 'hidrogenioAluminio',
+  'al3': 'aluminio',
+  'mg': 'magnesio',
+  'ca': 'calcio',
+  's': 'enxofre',
+  'k': 'potassio',
+  'pmeh': 'fosforoMehlich',
+  'phcacl2': 'phCacl',
+  'cultura': 'cultura',
+  'classtext': 'classificacaoTextural',
+  'delete': 'delete',
+  'data': 'data',
+  'id_produtor':'id_produtor',
+  'id_amostra':'id_amostra',
+  'talhao':'talhao',
+  'nome':'nome',
+  'assentamento':'assentamento',
+  'cidade':'cidade',
+  'cpf':'cpf',
+  'propriedade':'propriedade',
+  'area':'area'
+};
+
+
+// Criar um array com os nomes dos campos para facilitar o mapeamento
 const dbFields = [
   'id_user',
   'cod',
@@ -66,12 +153,6 @@ const dbFields = [
   'fe',
   'cu',
   'b',
-  'm',
-  'v',
-  'ctcph',
-  'ctc',
-  'sb',
-  'mo',
   'hal',
   'al3',
   'mg',
@@ -80,18 +161,24 @@ const dbFields = [
   'k',
   'pmeh',
   'phcacl2',
-  'nc_talhao',
-  'nc',
-  'cultura',
-  'classtext',
+  'mo',
   'delete',
   'data',
-  'talhao',
+];
+
+// Campos calculados que não precisam de mapeamento
+const calculatedFields = [
+  'sb',
+  'ctc',
+  'ctcph',
+  'v',
+  'm',
+  'classtext'
 ];
 
 type FieldType = 'string' | 'number' | 'date';
 
-// Updated field types mapping
+// Mapeamento dos tipos de cada campo
 const fieldTypes: Record<string, FieldType> = {
   id_user: 'string',
   cod: 'string',
@@ -117,20 +204,86 @@ const fieldTypes: Record<string, FieldType> = {
   k: 'number',
   pmeh: 'number',
   phcacl2: 'number',
-  nc_talhao: 'number',
-  nc: 'number',
   cultura: 'string',
   classtext: 'string',
   delete: 'number',
   data: 'date',
-  talhao: 'string',
+};
+
+// Função para classificar a textura do solo
+const classTextura = (areia: number, argila: number, silte: number) => {
+  let texturaSolo;
+
+  if (argila > 60 && areia < 40 && silte < 40) {
+    texturaSolo = "Muito Argiloso";
+  } else if (argila > 40 && argila < 60 && areia < 45 && silte < 40) {
+    texturaSolo = "Argila";
+  } else if (argila > 40 && argila < 60 && areia < 20 && silte < 60 && silte > 40) {
+    texturaSolo = "Argila Siltosa";
+  } else if (argila > 35 && argila < 55 && areia < 65 && areia > 45 && silte < 20) {
+    texturaSolo = "Argila Arenosa";
+  } else if (argila > 27 && argila < 40 && areia < 20 && silte < 73 && silte > 40) {
+    texturaSolo = "Franco Argilo Siltoso";
+  } else if (argila > 27 && argila < 40 && areia < 45 && areia > 20 && silte < 55 && silte > 15) {
+    texturaSolo = "Franco Argiloso";
+  } else if (argila > 20 && argila < 35 && areia < 80 && areia > 45 && silte < 28) {
+    texturaSolo = "Franco Argilo Arenoso";
+  } else if (argila > 8 && argila < 27 && areia < 52 && areia > 23 && silte > 28 && silte < 50) {
+    texturaSolo = "Franco";
+  } else if (argila > 0 && argila < 27 && areia < 50 && areia > 0 && silte > 63) {
+    if (argila < 12 && areia < 20 && silte > 80) {
+      texturaSolo = "Silte";
+    } else {
+      texturaSolo = "Franco Siltoso";
+    }
+  } else if (argila > 0 && argila < 20 && areia > 52 && silte < 50) {
+    if (argila >= 10) {
+      if (argila < 20 && areia <= 81 && areia > 52 && silte < 50) {
+        texturaSolo = "Franco Arenoso";
+      } else if (argila < 15 && areia > 81 && areia < 86 && silte <= 25) {
+        texturaSolo = "Areia Franca";
+      } else {
+        texturaSolo = "Areia";
+      }
+    } else {
+      if (argila < 20 && areia <= 76 && areia > 52 && silte < 50) {
+        texturaSolo = "Franco Arenoso";
+      } else if (argila < 15 && areia > 75 && areia < 86 && silte <= 25) {
+        texturaSolo = "Areia Franca";
+      } else {
+        texturaSolo = "Areia";
+      }
+    }
+  } else {
+    texturaSolo = "Indeterminado"; // Para o caso onde nenhuma das condições se aplica
+  }
+
+  return texturaSolo;
 };
 
 const Index = () => {
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
-  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [isLoading, setIsLoading] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authCredentials, setAuthCredentials] = useState<AuthCredentials>({
+    email: "",
+    senha: ""
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    total: number;
+    processed: number;
+    success: number;
+    failed: number;
+  }>({
+    total: 0,
+    processed: 0,
+    success: 0,
+    failed: 0,
+  });
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
@@ -146,57 +299,320 @@ const Index = () => {
     });
   };
 
-  const areAllFieldsMapped = () => {
-    return dbFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
+  const handleCredentialsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAuthCredentials({
+      ...authCredentials,
+      [name]: value,
+    });
   };
 
-  const generateInsertQueries = () => {
-    const queries: string[] = [];
+  const handleAuthenticate = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://solifbackend-development.up.railway.app/solovivo/usuario?email=${authCredentials.email}&senha=${authCredentials.senha}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Falha na autenticação');
+      }
+
+      const authData: AuthResponse = await response.json();
+      setAuthToken(authData.token);
+      setIsAuthenticated(true);
+      
+      toast({
+        title: "Autenticado com sucesso",
+        description: `Bem-vindo, ${authData.nome}`,
+      });
+    } catch (error) {
+      console.error('Erro na autenticação:', error);
+      toast({
+        title: "Erro de autenticação",
+        description: "Verifique suas credenciais e tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const areRequiredFieldsMapped = () => {
+    // Lista de campos obrigatórios que devem ser mapeados
+    const requiredFields = [
+      'id_user',
+      'cod',
+    ];
     
-    data.forEach(row => {
-      const mappedValues: Record<string, any> = {};
-      
-      Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
-        if (dbField === 'data') {
-          mappedValues[dbField] = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
-        } else if (excelColumn && row[excelColumn] !== undefined) {
-          mappedValues[dbField] = row[excelColumn];
+    return requiredFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
+  };
+
+  // Função para calcular os campos derivados
+  const calculateDerivedFields = (row: any) => {
+    const mappedValues: Record<string, any> = {};
+    
+    // Primeiro, extrair os valores mapeados dos campos básicos
+    Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
+      if (excelColumn && excelColumn !== 'none' && row[excelColumn] !== undefined) {
+        let value = row[excelColumn];
+        
+        // Converter para número se o campo for numérico
+        if (fieldTypes[dbField] === 'number') {
+          value = parseFloat(value);
+          if (isNaN(value)) value = 0;
         }
-      });
-      
-      const fields = Object.keys(mappedValues);
-      const values = fields.map(field => {
-        const value = mappedValues[field];
-        if (fieldTypes[field] === 'string' || fieldTypes[field] === 'date') {
-          return `'${value}'`;
-        }
-        return value;
-      });
-      
-      const query = `INSERT INTO analise (${fields.join(', ')}) VALUES (${values.join(', ')});`;
-      queries.push(query);
+        
+        mappedValues[dbField] = value;
+      }
     });
     
-    return queries;
+    // Adicionar a data selecionada
+    if (selectedDate) {
+      mappedValues['data'] = format(selectedDate, 'yyyy-MM-dd');
+    }
+
+    // Definir valor padrão para delete
+    if (!mappedValues['delete']) {
+      mappedValues['delete'] = 0;
+    }
+
+    try {
+      // Obter os valores necessários para os cálculos
+      const ca = mappedValues['ca'] || 0;
+      const mg = mappedValues['mg'] || 0;
+      const kRaw = mappedValues['k'] || 0;
+      const k = kRaw / 391; // Conversão conforme a fórmula
+      const al3 = mappedValues['al3'] || 0;
+      const hal = mappedValues['hal'] || 0;
+      const areia = mappedValues['areia_total'] || 0;
+      const silte = mappedValues['silte'] || 0;
+      const argila = mappedValues['argila'] || 0;
+
+      // Realizar os cálculos
+      const sb = ca + mg + k;
+      const ctc = sb + al3; // tt = sb + al
+      const ctcph = sb + hal; // ttt = sb + hal
+      const v = (sb / ctcph) * 100;
+      const m = (al3 / ctc) * 100;
+
+      // Adicionar os campos calculados
+      mappedValues['sb'] = sb;
+      mappedValues['ctc'] = ctc;
+      mappedValues['ctcph'] = ctcph;
+      mappedValues['v'] = v;
+      mappedValues['m'] = m;
+
+      // Calcular a classificação textural
+      mappedValues['classtext'] = classTextura(areia/10, argila/10, silte/10);
+ 
+    } catch (error) {
+      console.error('Erro ao calcular campos derivados:', error);
+    }
+
+    return mappedValues;
   };
 
-  const handleImport = () => {
+
+
+
+  // Função para calcular os campos derivados
+  const adicionarDados = async (mappedValues: Record<string, any>) =>{
     try {
-      if (!areAllFieldsMapped()) {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://solifbackend-development.up.railway.app/solovivo/amostra/buscar/produtor/${mappedValues['cod']}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': authToken
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Falha ao buscar amostra');
+      }
+
+      const authData: AmostraResponse = await response.json();
+      mappedValues['id_produtor']=authData.id_produtor;
+      mappedValues['id_amostra']=authData.id;
+      mappedValues['talhao']=authData.talhao;
+      mappedValues['assentamento']=authData.assentamento;
+      mappedValues['cidade']=authData.cidade;
+      mappedValues['nome']=authData.nome.trim()+' '+authData.sobrenome.trim();
+      mappedValues['cpf']=authData.assentamento;
+      mappedValues['propriedade']=authData.propriedade;
+      mappedValues['area']=authData.area;
+
+    } catch (error) {
+      console.error('Erro ao buscar amostra:', error);
+      toast({
+        title: "Erro ao buscar amostra",
+        description: "Verifique as informações e tente novamente.",
+        variant: "destructive",
+      });
+    } 
+
+    return mappedValues;
+  };
+
+  const transformToApiFormat = (mappedValues: Record<string, any>): SoilAnalysis => {
+    // Criar um objeto com todos os campos da API definidos como null
+    const apiData: SoilAnalysis = {
+      id_user: '',
+      id_produtor: null,
+      codigo: '',
+      areia: null,
+      silte: null,
+      argila: null,
+      zinco: null,
+      manganes: null,
+      ferro: null,
+      cobre: null,
+      boro: null,
+      saturacaoAluminio: null,
+      saturacaoBases: null,
+      ctcph: null,
+      ctcEfetiva: null,
+      somaBases: null,
+      materiaOrganica: null,
+      hidrogenioAluminio: null,
+      aluminio: null,
+      magnesio: null,
+      calcio: null,
+      enxofre: null,
+      potassio: null,
+      fosforoMehlich: null,
+      phCacl: null,
+      necessidadeCalagemTalhao: null,
+      necessidadeCalagemHa: null,
+      cultura: null,
+      classificacaoTextural: null,
+      delete: 0,
+      id_amostra: null,
+      fosfatagemHa: null,
+      fosfatagemTalhao: null,
+      potassioHa: null,
+      potassioTalhao: null,
+      data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+      talhao: null,
+      assentamento: null,
+      cidade: null,
+      nome: null,
+      cpf: null,
+      propriedade: null,
+      area: null
+    };
+    console.log(mappedValues);
+
+    // Mapear os valores do formato original para o formato da API
+    // Utilizando type assertion para resolver o erro de TypeScript
+    Object.entries(mappedValues).forEach(([field, value]) => {
+      const apiField = fieldMapping[field as keyof typeof fieldMapping];
+      if (apiField) {
+        (apiData as any)[apiField] = value;
+      }
+    });
+
+    return apiData;
+  };
+
+  const submitToApi = async (rowData: SoilAnalysis) => {
+    if (!authToken) {
+      throw new Error('Token de autenticação não disponível');
+    }
+
+
+    const response = await fetch(
+      'https://solifbackend-development.up.railway.app/solovivo/analise',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken
+        },
+        body: JSON.stringify(rowData)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Erro ao enviar dados: ${response.status}`);
+    }
+
+    return await response.json();
+  };
+
+  const handleImport = async () => {
+    try {
+      if (!areRequiredFieldsMapped()) {
         toast({
           title: "Erro",
-          description: "Por favor, mapeie todos os campos antes de prosseguir.",
+          description: "Por favor, mapeie pelo menos os campos obrigatórios (id_user, cod) antes de prosseguir.",
           variant: "destructive",
         });
         return;
       }
 
-      const insertQueries = generateInsertQueries();
-      console.log('Queries SQL geradas:', insertQueries.join('\n'));
-      
+      if (!selectedDate) {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione uma data para continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!authToken) {
+        toast({
+          title: "Erro",
+          description: "Por favor, autentique-se antes de prosseguir.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsLoading(true);
+      setImportProgress({
+        total: data.length,
+        processed: 0,
+        success: 0,
+        failed: 0,
+      });
+
+      const results = [];
+      for (let i = 0; i < data.length; i++) {
+        try {
+          const row = data[i];
+          const mappedValues = calculateDerivedFields(row);
+          const mappedValues2=await adicionarDados(mappedValues);
+          const apiData = transformToApiFormat(mappedValues2);
+          
+          const result = await submitToApi(apiData);
+          results.push({ success: true, data: result });
+          
+          setImportProgress(prev => ({
+            ...prev,
+            processed: prev.processed + 1,
+            success: prev.success + 1
+          }));
+        } catch (error) {
+          console.error('Erro ao processar linha', i, error);
+          results.push({ success: false, error });
+          
+          setImportProgress(prev => ({
+            ...prev,
+            processed: prev.processed + 1,
+            failed: prev.failed + 1
+          }));
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
       toast({
-        title: "Sucesso",
-        description: `${data.length} registros processados. Verifique o console para ver as queries SQL.`,
+        title: "Importação concluída",
+        description: `${successCount} de ${data.length} registros importados com sucesso.`,
+        variant: successCount === data.length ? "default" : "destructive",
       });
       
     } catch (error) {
@@ -206,6 +622,8 @@ const Index = () => {
         description: "Ocorreu um erro durante a importação dos dados.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -213,6 +631,13 @@ const Index = () => {
     setData([]);
     setColumns([]);
     setColumnMapping({});
+    setSelectedDate(new Date());
+    setImportProgress({
+      total: 0,
+      processed: 0,
+      success: 0,
+      failed: 0,
+    });
   };
 
   const getMappedFieldsCount = () => {
@@ -226,11 +651,53 @@ const Index = () => {
     if (field === 'delete') {
       return [0];
     }
-    if (field === 'data') {
-      return [];
-    }
     return columns;
   };
+
+  // Renderização do formulário de autenticação
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <h1 className="text-3xl font-bold mb-8 text-center">Importador de Planilhas</h1>
+        
+        <div className="max-w-md mx-auto bg-white p-6 border rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Autenticação</h2>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email"
+                name="email"
+                type="email"
+                placeholder="seu.email@exemplo.com"
+                value={authCredentials.email}
+                onChange={handleCredentialsChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="senha">Senha</Label>
+              <Input 
+                id="senha"
+                name="senha"
+                type="password"
+                value={authCredentials.senha}
+                onChange={handleCredentialsChange}
+              />
+            </div>
+            
+            <Button 
+              className="w-full"
+              onClick={handleAuthenticate}
+              disabled={isLoading || !authCredentials.email || !authCredentials.senha}
+            >
+              {isLoading ? "Autenticando..." : "Entrar"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -254,71 +721,102 @@ const Index = () => {
               Você mapeou {getMappedFieldsCount()} de {dbFields.length} campos.
             </p>
             
+            {/* Seletor de data */}
+            <div className="mb-6">
+              <label className="text-sm font-medium mb-1 block">
+                Data da Análise
+                <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? (
+                      format(selectedDate, "PPP", { locale: ptBR })
+                    ) : (
+                      <span>Selecione uma data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dbFields.map((field) => (
+              {dbFields
+                .filter(field => field !== 'data') // Excluir o campo 'data' pois agora usamos o calendário
+                .map((field) => (
                 <div key={field} className="space-y-1">
                   <label htmlFor={`field-${field}`} className="text-sm font-medium">
                     {field}
                     <span className="text-xs text-gray-500 ml-1">
                       ({fieldTypes[field]})
+                      {field === 'id_user' || field === 'cod' ? ' (obrigatório)' : ''}
                     </span>
                   </label>
-                  {field === 'data' ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "PPP") : <span>Selecione uma data</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                    <Select
-                      value={columnMapping[field] || "none"}
-                      onValueChange={(value) => handleColumnMappingChange(field, value === "none" ? "" : value)}
-                    >
-                      <SelectTrigger id={`field-${field}`} className="w-full">
-                        <SelectValue placeholder="Selecione uma coluna" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        {field === 'id_user' ? (
-                          ['JNA', 'CNP'].map(option => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))
-                        ) : field === 'delete' ? (
-                          <SelectItem value="0">0</SelectItem>
-                        ) : (
-                          columns.map((column) => (
-                            <SelectItem key={column} value={column}>
-                              {column}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select
+                    value={columnMapping[field] || "none"}
+                    onValueChange={(value) => handleColumnMappingChange(field, value)}
+                  >
+                    <SelectTrigger id={`field-${field}`} className="w-full">
+                      <SelectValue placeholder="Selecione uma coluna" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {field === 'id_user' ? (
+                        ['JNA', 'CNP'].map(option => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))
+                      ) : field === 'delete' ? (
+                        <SelectItem value="0">0</SelectItem>
+                      ) : (
+                        columns.map((column) => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               ))}
             </div>
           </div>
+          
+          {importProgress.total > 0 && (
+            <div className="bg-white p-4 border rounded-lg">
+              <h3 className="text-lg font-medium mb-2">Progresso da Importação</h3>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${(importProgress.processed / importProgress.total) * 100}%` }}
+                ></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p>Processados: {importProgress.processed} / {importProgress.total}</p>
+                  <p>Sucesso: {importProgress.success}</p>
+                </div>
+                <div>
+                  <p>Falhas: {importProgress.failed}</p>
+                  <p>Restantes: {importProgress.total - importProgress.processed}</p>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
@@ -326,11 +824,11 @@ const Index = () => {
             </p>
             <Button
               onClick={handleImport}
-              disabled={!areAllFieldsMapped()}
+              disabled={!areRequiredFieldsMapped() || !selectedDate || isLoading}
               className="gap-2"
             >
               <Database className="w-4 h-4" />
-              Gerar Queries SQL
+              {isLoading ? "Importando..." : "Importar Dados"}
             </Button>
           </div>
         </div>
