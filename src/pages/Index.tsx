@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,13 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 // Interface para os dados de autenticação
 interface AuthCredentials {
@@ -99,50 +107,76 @@ interface SoilAnalysis {
   area: number | null;
 }
 
-// Mapeamento dos campos do banco original para a nova API
-const fieldMapping = {
+// Interface para os dados da amostra
+interface SoilSample {
+  id_user: string;
+  id_produtor: number | null;
+  codigo: string;
+  talhao: string | null;
+  area: number | null;
+  culturaatual: string | null;
+  culturaimplementar: string | null;
+  delete: number;
+  informacoes: string | null;
+  pontos: string | null;
+  assentamento: string | null;
+  data: string;
+  nome: string | null;
+  cpf: string | null;
+}
+
+// Mapeamento dos campos do banco original para a nova API para análises
+const analiseFieldMapping = {
   'id_user': 'id_user',
   'cod': 'codigo',
-  'areia_total': 'areia',
+  'areia_total': 'areia_total',
   'silte': 'silte',
   'argila': 'argila',
-  'zn': 'zinco',
-  'mn': 'manganes',
-  'fe': 'ferro',
-  'cu': 'cobre',
-  'b': 'boro',
-  'm': 'saturacaoAluminio',
-  'v': 'saturacaoBases',
+  'zn': 'zn',
+  'mn': 'mn',
+  'fe': 'fe',
+  'cu': 'cu',
+  'b': 'b',
+  'm': 'm',
+  'v': 'v',
   'ctcph': 'ctcph',
-  'ctc': 'ctcEfetiva',
-  'sb': 'somaBases',
-  'mo': 'materiaOrganica',
-  'hal': 'hidrogenioAluminio',
-  'al3': 'aluminio',
-  'mg': 'magnesio',
-  'ca': 'calcio',
-  's': 'enxofre',
-  'k': 'potassio',
-  'pmeh': 'fosforoMehlich',
-  'phcacl2': 'phCacl',
+  'ctc': 'ctc',
+  'sb': 'sb',
+  'mo': 'mo',
+  'hal': 'hal',
+  'al3': 'al3',
+  'mg': 'mg',
+  'ca': 'ca',
+  's': 's',
+  'k': 'k',
+  'pmeh': 'pmeh',
+  'phcacl2': 'phcacl2',
   'cultura': 'cultura',
-  'classtext': 'classificacaoTextural',
+  'classtext': 'classtext',
   'delete': 'delete',
   'data': 'data',
-  'id_produtor':'id_produtor',
-  'id_amostra':'id_amostra',
-  'talhao':'talhao',
-  'nome':'nome',
-  'assentamento':'assentamento',
-  'cidade':'cidade',
-  'cpf':'cpf',
-  'propriedade':'propriedade',
-  'area':'area'
 };
 
+// Mapeamento dos campos para amostras
+const amostraFieldMapping = {
+  'id_user': 'id_user',
+  'id_produtor': 'id_produtor',
+  'codigo': 'codigo',
+  'talhao': 'talhao',
+  'area': 'area',
+  'culturaatual': 'culturaatual',
+  'culturaimplementar': 'culturaimplementar',
+  'delete': 'delete',
+  'informacoes': 'infos', // Mapeando para o nome correto no banco
+  'pontos': 'pontos',
+  'assentamento': 'assentamento',
+  'data': 'data',
+  'nome': 'nome',
+  'cpf': 'cpf',
+};
 
-// Criar um array com os nomes dos campos para facilitar o mapeamento
-const dbFields = [
+// Criar arrays com os nomes dos campos para facilitar o mapeamento
+const analiseDbFields = [
   'id_user',
   'cod',
   'areia_total',
@@ -176,10 +210,28 @@ const calculatedFields = [
   'classtext'
 ];
 
+// Campos para amostras
+const amostraDbFields = [
+  'id_user',
+  'id_produtor',
+  'codigo',
+  'talhao',
+  'area',
+  'culturaatual',
+  'culturaimplementar',
+  'delete',
+  'informacoes',
+  'pontos',
+  'assentamento',
+  'data',
+  'nome',
+  'cpf',
+];
+
 type FieldType = 'string' | 'number' | 'date';
 
-// Mapeamento dos tipos de cada campo
-const fieldTypes: Record<string, FieldType> = {
+// Mapeamento dos tipos de cada campo para análises
+const analiseFieldTypes: Record<string, FieldType> = {
   id_user: 'string',
   cod: 'string',
   areia_total: 'number',
@@ -208,6 +260,24 @@ const fieldTypes: Record<string, FieldType> = {
   classtext: 'string',
   delete: 'number',
   data: 'date',
+};
+
+// Mapeamento dos tipos de cada campo para amostras
+const amostraFieldTypes: Record<string, FieldType> = {
+  id_user: 'string',
+  id_produtor: 'number',
+  codigo: 'string',
+  talhao: 'string',
+  area: 'number',
+  culturaatual: 'string',
+  culturaimplementar: 'string',
+  delete: 'number',
+  informacoes: 'string',
+  pontos: 'string',
+  assentamento: 'string',
+  data: 'date',
+  nome: 'string',
+  cpf: 'string',
 };
 
 // Função para classificar a textura do solo
@@ -284,6 +354,7 @@ const Index = () => {
     success: 0,
     failed: 0,
   });
+  const [activeTab, setActiveTab] = useState("analises");
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
@@ -338,17 +409,25 @@ const Index = () => {
     }
   };
 
+  const getCurrentDbFields = () => {
+    return activeTab === "analises" ? analiseDbFields : amostraDbFields;
+  };
+
+  const getCurrentFieldTypes = () => {
+    return activeTab === "analises" ? analiseFieldTypes : amostraFieldTypes;
+  };
+
   const areRequiredFieldsMapped = () => {
     // Lista de campos obrigatórios que devem ser mapeados
     const requiredFields = [
       'id_user',
-      'cod',
+      activeTab === "analises" ? 'cod' : 'codigo',
     ];
     
     return requiredFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
   };
 
-  // Função para calcular os campos derivados
+  // Função para calcular os campos derivados para análises
   const calculateDerivedFields = (row: any) => {
     const mappedValues: Record<string, any> = {};
     
@@ -358,7 +437,7 @@ const Index = () => {
         let value = row[excelColumn];
         
         // Converter para número se o campo for numérico
-        if (fieldTypes[dbField] === 'number') {
+        if (getCurrentFieldTypes()[dbField] === 'number') {
           value = parseFloat(value);
           if (isNaN(value)) value = 0;
         }
@@ -377,47 +456,46 @@ const Index = () => {
       mappedValues['delete'] = 0;
     }
 
-    try {
-      // Obter os valores necessários para os cálculos
-      const ca = mappedValues['ca'] || 0;
-      const mg = mappedValues['mg'] || 0;
-      const kRaw = mappedValues['k'] || 0;
-      const k = kRaw / 391; // Conversão conforme a fórmula
-      const al3 = mappedValues['al3'] || 0;
-      const hal = mappedValues['hal'] || 0;
-      const areia = mappedValues['areia_total'] || 0;
-      const silte = mappedValues['silte'] || 0;
-      const argila = mappedValues['argila'] || 0;
+    if (activeTab === "analises") {
+      try {
+        // Obter os valores necessários para os cálculos
+        const ca = mappedValues['ca'] || 0;
+        const mg = mappedValues['mg'] || 0;
+        const kRaw = mappedValues['k'] || 0;
+        const k = kRaw / 391; // Conversão conforme a fórmula
+        const al3 = mappedValues['al3'] || 0;
+        const hal = mappedValues['hal'] || 0;
+        const areia = mappedValues['areia_total'] || 0;
+        const silte = mappedValues['silte'] || 0;
+        const argila = mappedValues['argila'] || 0;
 
-      // Realizar os cálculos
-      const sb = ca + mg + k;
-      const ctc = sb + al3; // tt = sb + al
-      const ctcph = sb + hal; // ttt = sb + hal
-      const v = (sb / ctcph) * 100;
-      const m = (al3 / ctc) * 100;
+        // Realizar os cálculos
+        const sb = ca + mg + k;
+        const ctc = sb + al3; // tt = sb + al
+        const ctcph = sb + hal; // ttt = sb + hal
+        const v = (sb / ctcph) * 100;
+        const m = (al3 / ctc) * 100;
 
-      // Adicionar os campos calculados
-      mappedValues['sb'] = sb;
-      mappedValues['ctc'] = ctc;
-      mappedValues['ctcph'] = ctcph;
-      mappedValues['v'] = v;
-      mappedValues['m'] = m;
+        // Adicionar os campos calculados
+        mappedValues['sb'] = sb;
+        mappedValues['ctc'] = ctc;
+        mappedValues['ctcph'] = ctcph;
+        mappedValues['v'] = v;
+        mappedValues['m'] = m;
 
-      // Calcular a classificação textural
-      mappedValues['classtext'] = classTextura(areia/10, argila/10, silte/10);
- 
-    } catch (error) {
-      console.error('Erro ao calcular campos derivados:', error);
+        // Calcular a classificação textural
+        mappedValues['classtext'] = classTextura(areia/10, argila/10, silte/10);
+      } catch (error) {
+        console.error('Erro ao calcular campos derivados:', error);
+      }
     }
 
     return mappedValues;
   };
 
-
-
-
-  // Função para calcular os campos derivados
-  const adicionarDados = async (mappedValues: Record<string, any>) =>{
+  const adicionarDados = async (mappedValues: Record<string, any>) => {
+    if (activeTab !== "analises") return mappedValues; // Não buscar dados adicionais para amostras
+    
     try {
       setIsLoading(true);
       const response = await fetch(
@@ -452,80 +530,113 @@ const Index = () => {
         description: "Verifique as informações e tente novamente.",
         variant: "destructive",
       });
-    } 
+    } finally {
+      setIsLoading(false);
+    }
 
     return mappedValues;
   };
 
-  const transformToApiFormat = (mappedValues: Record<string, any>): SoilAnalysis => {
-    // Criar um objeto com todos os campos da API definidos como null
-    const apiData: SoilAnalysis = {
-      id_user: '',
-      id_produtor: null,
-      codigo: '',
-      areia: null,
-      silte: null,
-      argila: null,
-      zinco: null,
-      manganes: null,
-      ferro: null,
-      cobre: null,
-      boro: null,
-      saturacaoAluminio: null,
-      saturacaoBases: null,
-      ctcph: null,
-      ctcEfetiva: null,
-      somaBases: null,
-      materiaOrganica: null,
-      hidrogenioAluminio: null,
-      aluminio: null,
-      magnesio: null,
-      calcio: null,
-      enxofre: null,
-      potassio: null,
-      fosforoMehlich: null,
-      phCacl: null,
-      necessidadeCalagemTalhao: null,
-      necessidadeCalagemHa: null,
-      cultura: null,
-      classificacaoTextural: null,
-      delete: 0,
-      id_amostra: null,
-      fosfatagemHa: null,
-      fosfatagemTalhao: null,
-      potassioHa: null,
-      potassioTalhao: null,
-      data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-      talhao: null,
-      assentamento: null,
-      cidade: null,
-      nome: null,
-      cpf: null,
-      propriedade: null,
-      area: null
-    };
-    console.log(mappedValues);
+  const transformToApiFormat = (mappedValues: Record<string, any>) => {
+    if (activeTab === "analises") {
+      // Criar um objeto com todos os campos da API definidos como null para análises
+      const apiData: SoilAnalysis = {
+        id_user: '',
+        id_produtor: null,
+        codigo: '',
+        areia: null,
+        silte: null,
+        argila: null,
+        zinco: null,
+        manganes: null,
+        ferro: null,
+        cobre: null,
+        boro: null,
+        saturacaoAluminio: null,
+        saturacaoBases: null,
+        ctcph: null,
+        ctcEfetiva: null,
+        somaBases: null,
+        materiaOrganica: null,
+        hidrogenioAluminio: null,
+        aluminio: null,
+        magnesio: null,
+        calcio: null,
+        enxofre: null,
+        potassio: null,
+        fosforoMehlich: null,
+        phCacl: null,
+        necessidadeCalagemTalhao: null,
+        necessidadeCalagemHa: null,
+        cultura: null,
+        classificacaoTextural: null,
+        delete: 0,
+        id_amostra: null,
+        fosfatagemHa: null,
+        fosfatagemTalhao: null,
+        potassioHa: null,
+        potassioTalhao: null,
+        data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+        talhao: null,
+        assentamento: null,
+        cidade: null,
+        nome: null,
+        cpf: null,
+        propriedade: null,
+        area: null
+      };
 
-    // Mapear os valores do formato original para o formato da API
-    // Utilizando type assertion para resolver o erro de TypeScript
-    Object.entries(mappedValues).forEach(([field, value]) => {
-      const apiField = fieldMapping[field as keyof typeof fieldMapping];
-      if (apiField) {
-        (apiData as any)[apiField] = value;
-      }
-    });
+      // Mapear os valores do formato original para o formato da API para análises
+      Object.entries(mappedValues).forEach(([field, value]) => {
+        const apiField = analiseFieldMapping[field as keyof typeof analiseFieldMapping];
+        if (apiField) {
+          (apiData as any)[apiField] = value;
+        }
+      });
 
-    return apiData;
+      return apiData;
+    } else {
+      // Criar um objeto com todos os campos da API definidos como null para amostras
+      const apiData: SoilSample = {
+        id_user: '',
+        id_produtor: null,
+        codigo: '',
+        talhao: null,
+        area: null,
+        culturaatual: null,
+        culturaimplementar: null,
+        delete: 0,
+        informacoes: null,
+        pontos: null,
+        assentamento: null,
+        data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+        nome: null,
+        cpf: null
+      };
+
+      // Mapear os valores do formato original para o formato da API para amostras
+      Object.entries(mappedValues).forEach(([field, value]) => {
+        const apiField = amostraFieldMapping[field as keyof typeof amostraFieldMapping];
+        if (apiField) {
+          (apiData as any)[apiField] = value;
+        }
+      });
+
+      return apiData;
+    }
   };
 
-  const submitToApi = async (rowData: SoilAnalysis) => {
+  const submitToApi = async (rowData: any) => {
     if (!authToken) {
       throw new Error('Token de autenticação não disponível');
     }
 
+    const endpoint = activeTab === "analises" 
+      ? 'https://solifbackend-development.up.railway.app/solovivo/analise'
+      : 'https://solifbackend-development.up.railway.app/solovivo/amostra';
 
     const response = await fetch(
-      'https://solifbackend-development.up.railway.app/solovivo/analise',
+      endpoint,
       {
         method: 'POST',
         headers: {
@@ -585,8 +696,13 @@ const Index = () => {
         try {
           const row = data[i];
           const mappedValues = calculateDerivedFields(row);
-          const mappedValues2=await adicionarDados(mappedValues);
-          const apiData = transformToApiFormat(mappedValues2);
+          
+          let finalValues = mappedValues;
+          if (activeTab === "analises") {
+            finalValues = await adicionarDados(mappedValues);
+          }
+          
+          const apiData = transformToApiFormat(finalValues);
           
           const result = await submitToApi(apiData);
           results.push({ success: true, data: result });
@@ -641,7 +757,10 @@ const Index = () => {
   };
 
   const getMappedFieldsCount = () => {
-    return Object.keys(columnMapping).filter(key => columnMapping[key] && columnMapping[key] !== 'none').length;
+    const currentDbFields = getCurrentDbFields();
+    return Object.keys(columnMapping)
+      .filter(key => currentDbFields.includes(key) && columnMapping[key] && columnMapping[key] !== 'none')
+      .length;
   };
 
   const getFieldOptions = (field: string) => {
@@ -716,84 +835,176 @@ const Index = () => {
           </div>
           
           <div className="bg-white p-4 border rounded-lg">
-            <p className="mb-4 text-sm text-gray-600">
-              Selecione a coluna da planilha que corresponde a cada campo do banco de dados. 
-              Você mapeou {getMappedFieldsCount()} de {dbFields.length} campos.
-            </p>
-            
-            {/* Seletor de data */}
-            <div className="mb-6">
-              <label className="text-sm font-medium mb-1 block">
-                Data da Análise
-                <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? (
-                      format(selectedDate, "PPP", { locale: ptBR })
-                    ) : (
-                      <span>Selecione uma data</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    initialFocus
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dbFields
-                .filter(field => field !== 'data') // Excluir o campo 'data' pois agora usamos o calendário
-                .map((field) => (
-                <div key={field} className="space-y-1">
-                  <label htmlFor={`field-${field}`} className="text-sm font-medium">
-                    {field}
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({fieldTypes[field]})
-                      {field === 'id_user' || field === 'cod' ? ' (obrigatório)' : ''}
-                    </span>
+            <Tabs defaultValue="analises" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="analises">Inserir Análises</TabsTrigger>
+                <TabsTrigger value="amostras">Inserir Amostras</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="analises" className="space-y-4">
+                <p className="mb-4 text-sm text-gray-600">
+                  Selecione a coluna da planilha que corresponde a cada campo do banco de dados. 
+                  Você mapeou {getMappedFieldsCount()} de {analiseDbFields.length} campos.
+                </p>
+                
+                {/* Seletor de data para Análises */}
+                <div className="mb-6">
+                  <label className="text-sm font-medium mb-1 block">
+                    Data da Análise
+                    <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
                   </label>
-                  <Select
-                    value={columnMapping[field] || "none"}
-                    onValueChange={(value) => handleColumnMappingChange(field, value)}
-                  >
-                    <SelectTrigger id={`field-${field}`} className="w-full">
-                      <SelectValue placeholder="Selecione uma coluna" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {field === 'id_user' ? (
-                        ['JNA', 'CNP'].map(option => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))
-                      ) : field === 'delete' ? (
-                        <SelectItem value="0">0</SelectItem>
-                      ) : (
-                        columns.map((column) => (
-                          <SelectItem key={column} value={column}>
-                            {column}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? (
+                          format(selectedDate, "PPP", { locale: ptBR })
+                        ) : (
+                          <span>Selecione uma data</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                        locale={ptBR}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              ))}
-            </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {analiseDbFields
+                    .filter(field => field !== 'data') // Excluir o campo 'data' pois agora usamos o calendário
+                    .map((field) => (
+                    <div key={field} className="space-y-1">
+                      <label htmlFor={`field-${field}`} className="text-sm font-medium">
+                        {field}
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({analiseFieldTypes[field]})
+                          {field === 'id_user' || field === 'cod' ? ' (obrigatório)' : ''}
+                        </span>
+                      </label>
+                      <Select
+                        value={columnMapping[field] || "none"}
+                        onValueChange={(value) => handleColumnMappingChange(field, value)}
+                      >
+                        <SelectTrigger id={`field-${field}`} className="w-full">
+                          <SelectValue placeholder="Selecione uma coluna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum</SelectItem>
+                          {field === 'id_user' ? (
+                            ['JNA', 'CNP'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : field === 'delete' ? (
+                            <SelectItem value="0">0</SelectItem>
+                          ) : (
+                            columns.map((column) => (
+                              <SelectItem key={column} value={column}>
+                                {column}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="amostras" className="space-y-4">
+                <p className="mb-4 text-sm text-gray-600">
+                  Selecione a coluna da planilha que corresponde a cada campo da amostra. 
+                  Você mapeou {getMappedFieldsCount()} de {amostraDbFields.length} campos.
+                </p>
+                
+                {/* Seletor de data para Amostras */}
+                <div className="mb-6">
+                  <label className="text-sm font-medium mb-1 block">
+                    Data da Amostra
+                    <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? (
+                          format(selectedDate, "PPP", { locale: ptBR })
+                        ) : (
+                          <span>Selecione uma data</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                        locale={ptBR}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {amostraDbFields
+                    .filter(field => field !== 'data') // Excluir o campo 'data' pois agora usamos o calendário
+                    .map((field) => (
+                    <div key={field} className="space-y-1">
+                      <label htmlFor={`field-${field}`} className="text-sm font-medium">
+                        {field}
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({amostraFieldTypes[field]})
+                          {field === 'id_user' || field === 'codigo' ? ' (obrigatório)' : ''}
+                        </span>
+                      </label>
+                      <Select
+                        value={columnMapping[field] || "none"}
+                        onValueChange={(value) => handleColumnMappingChange(field, value)}
+                      >
+                        <SelectTrigger id={`field-${field}`} className="w-full">
+                          <SelectValue placeholder="Selecione uma coluna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum</SelectItem>
+                          {field === 'id_user' ? (
+                            ['JNA', 'CNP'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : field === 'delete' ? (
+                            <SelectItem value="0">0</SelectItem>
+                          ) : (
+                            columns.map((column) => (
+                              <SelectItem key={column} value={column}>
+                                {column}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
           
           {importProgress.total > 0 && (
