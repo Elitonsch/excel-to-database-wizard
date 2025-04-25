@@ -256,8 +256,8 @@ const Index = () => {
 
   const getCurrentDbFields = () => {
     return activeTab === "analises" ? 
-      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo', 'delete', 'data'] :
-      ['id_user', 'id_produtor', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar', 'delete', 'informacoes', 'pontos', 'assentamento', 'data', 'nome', 'cpf'];
+      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo'] :
+      ['id_user', 'id_produtor', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar', 'informacoes', 'pontos', 'assentamento', 'nome', 'cpf'];
   };
 
   const getCurrentFieldTypes = () => {
@@ -311,12 +311,11 @@ const Index = () => {
   };
 
   const areRequiredFieldsMapped = () => {
-    const requiredFields = [
-      'id_user',
-      activeTab === "analises" ? 'cod' : 'codigo',
-    ];
+    const allFields = activeTab === "analises" ? 
+      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo'] :
+      ['id_user', 'id_produtor', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar', 'informacoes', 'pontos', 'assentamento', 'nome', 'cpf'];
     
-    return requiredFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
+    return allFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
   };
 
   const calculateDerivedFields = (row: any) => {
@@ -847,14 +846,14 @@ const Index = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {getCurrentDbFields()
-                    .filter(field => field !== 'data')
+                    .filter(field => field !== 'data' && field !== 'delete')
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
                         {field}
+                        <span className="text-xs text-red-500 ml-1">*</span>
                         <span className="text-xs text-gray-500 ml-1">
                           ({getCurrentFieldTypes()[field]})
-                          {field === 'id_user' || field === 'cod' ? ' (obrigatório)' : ''}
                         </span>
                       </label>
                       <Select
@@ -928,14 +927,14 @@ const Index = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {getCurrentDbFields()
-                    .filter(field => field !== 'data')
+                    .filter(field => field !== 'data' && field !== 'delete')
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
                         {field}
+                        <span className="text-xs text-red-500 ml-1">*</span>
                         <span className="text-xs text-gray-500 ml-1">
                           ({getCurrentFieldTypes()[field]})
-                          {field === 'id_user' || field === 'codigo' ? ' (obrigatório)' : ''}
                         </span>
                       </label>
                       <Select
