@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
@@ -30,13 +29,11 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 
-// Interface para os dados de autenticação
 interface AuthCredentials {
   email: string;
   senha: string;
 }
 
-// Interface para os dados de autenticação retornados pela API
 interface AuthResponse {
   id: number;
   id_user: string;
@@ -60,7 +57,6 @@ interface AmostraResponse {
   area: number;
 }
 
-// Interface para os dados do banco de dados baseado na entidade Analise
 interface SoilAnalysis {
   id_user: string;
   id_produtor: number | null;
@@ -107,7 +103,6 @@ interface SoilAnalysis {
   area: number | null;
 }
 
-// Interface para os dados da amostra
 interface SoilSample {
   id_user: string;
   id_produtor: number | null;
@@ -125,7 +120,6 @@ interface SoilSample {
   cpf: string | null;
 }
 
-// Mapeamento dos campos do banco original para a nova API para análises
 const analiseFieldMapping = {
   'id_user': 'id_user',
   'cod': 'codigo',
@@ -157,7 +151,6 @@ const analiseFieldMapping = {
   'data': 'data',
 };
 
-// Mapeamento dos campos para amostras
 const amostraFieldMapping = {
   'id_user': 'id_user',
   'id_produtor': 'id_produtor',
@@ -167,7 +160,7 @@ const amostraFieldMapping = {
   'culturaatual': 'culturaatual',
   'culturaimplementar': 'culturaimplementar',
   'delete': 'delete',
-  'informacoes': 'infos', // Mapeando para o nome correto no banco
+  'informacoes': 'infos',
   'pontos': 'pontos',
   'assentamento': 'assentamento',
   'data': 'data',
@@ -175,7 +168,6 @@ const amostraFieldMapping = {
   'cpf': 'cpf',
 };
 
-// Criar arrays com os nomes dos campos para facilitar o mapeamento
 const analiseDbFields = [
   'id_user',
   'cod',
@@ -200,7 +192,6 @@ const analiseDbFields = [
   'data',
 ];
 
-// Campos calculados que não precisam de mapeamento
 const calculatedFields = [
   'sb',
   'ctc',
@@ -210,7 +201,6 @@ const calculatedFields = [
   'classtext'
 ];
 
-// Campos para amostras
 const amostraDbFields = [
   'id_user',
   'id_produtor',
@@ -230,7 +220,6 @@ const amostraDbFields = [
 
 type FieldType = 'string' | 'number' | 'date';
 
-// Mapeamento dos tipos de cada campo para análises
 const analiseFieldTypes: Record<string, FieldType> = {
   id_user: 'string',
   cod: 'string',
@@ -262,7 +251,6 @@ const analiseFieldTypes: Record<string, FieldType> = {
   data: 'date',
 };
 
-// Mapeamento dos tipos de cada campo para amostras
 const amostraFieldTypes: Record<string, FieldType> = {
   id_user: 'string',
   id_produtor: 'number',
@@ -280,7 +268,6 @@ const amostraFieldTypes: Record<string, FieldType> = {
   cpf: 'string',
 };
 
-// Função para classificar a textura do solo
 const classTextura = (areia: number, argila: number, silte: number) => {
   let texturaSolo;
 
@@ -325,11 +312,16 @@ const classTextura = (areia: number, argila: number, silte: number) => {
       }
     }
   } else {
-    texturaSolo = "Indeterminado"; // Para o caso onde nenhuma das condições se aplica
+    texturaSolo = "Indeterminado";
   }
 
   return texturaSolo;
 };
+
+interface DuplicateItem {
+  codigo: string;
+  tipo: 'analise' | 'amostra';
+}
 
 const Index = () => {
   const [data, setData] = useState<any[]>([]);
@@ -355,6 +347,7 @@ const Index = () => {
     failed: 0,
   });
   const [activeTab, setActiveTab] = useState("analises");
+  const [duplicateItems, setDuplicateItems] = useState<DuplicateItem[]>([]);
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
@@ -418,7 +411,6 @@ const Index = () => {
   };
 
   const areRequiredFieldsMapped = () => {
-    // Lista de campos obrigatórios que devem ser mapeados
     const requiredFields = [
       'id_user',
       activeTab === "analises" ? 'cod' : 'codigo',
@@ -427,16 +419,13 @@ const Index = () => {
     return requiredFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
   };
 
-  // Função para calcular os campos derivados para análises
   const calculateDerivedFields = (row: any) => {
     const mappedValues: Record<string, any> = {};
     
-    // Primeiro, extrair os valores mapeados dos campos básicos
     Object.entries(columnMapping).forEach(([dbField, excelColumn]) => {
       if (excelColumn && excelColumn !== 'none' && row[excelColumn] !== undefined) {
         let value = row[excelColumn];
         
-        // Converter para número se o campo for numérico
         if (getCurrentFieldTypes()[dbField] === 'number') {
           value = parseFloat(value);
           if (isNaN(value)) value = 0;
@@ -446,44 +435,38 @@ const Index = () => {
       }
     });
     
-    // Adicionar a data selecionada
     if (selectedDate) {
       mappedValues['data'] = format(selectedDate, 'yyyy-MM-dd');
     }
 
-    // Definir valor padrão para delete
     if (!mappedValues['delete']) {
       mappedValues['delete'] = 0;
     }
 
     if (activeTab === "analises") {
       try {
-        // Obter os valores necessários para os cálculos
         const ca = mappedValues['ca'] || 0;
         const mg = mappedValues['mg'] || 0;
         const kRaw = mappedValues['k'] || 0;
-        const k = kRaw / 391; // Conversão conforme a fórmula
+        const k = kRaw / 391;
         const al3 = mappedValues['al3'] || 0;
         const hal = mappedValues['hal'] || 0;
         const areia = mappedValues['areia_total'] || 0;
         const silte = mappedValues['silte'] || 0;
         const argila = mappedValues['argila'] || 0;
 
-        // Realizar os cálculos
         const sb = ca + mg + k;
-        const ctc = sb + al3; // tt = sb + al
-        const ctcph = sb + hal; // ttt = sb + hal
+        const ctc = sb + al3;
+        const ctcph = sb + hal;
         const v = (sb / ctcph) * 100;
         const m = (al3 / ctc) * 100;
 
-        // Adicionar os campos calculados
         mappedValues['sb'] = sb;
         mappedValues['ctc'] = ctc;
         mappedValues['ctcph'] = ctcph;
         mappedValues['v'] = v;
         mappedValues['m'] = m;
 
-        // Calcular a classificação textural
         mappedValues['classtext'] = classTextura(areia/10, argila/10, silte/10);
       } catch (error) {
         console.error('Erro ao calcular campos derivados:', error);
@@ -494,8 +477,8 @@ const Index = () => {
   };
 
   const adicionarDados = async (mappedValues: Record<string, any>) => {
-    if (activeTab !== "analises") return mappedValues; // Não buscar dados adicionais para amostras
-    
+    if (activeTab !== "analises") return mappedValues;
+
     try {
       setIsLoading(true);
       const response = await fetch(
@@ -539,7 +522,6 @@ const Index = () => {
 
   const transformToApiFormat = (mappedValues: Record<string, any>) => {
     if (activeTab === "analises") {
-      // Criar um objeto com todos os campos da API definidos como null para análises
       const apiData: SoilAnalysis = {
         id_user: '',
         id_produtor: null,
@@ -586,7 +568,6 @@ const Index = () => {
         area: null
       };
 
-      // Mapear os valores do formato original para o formato da API para análises
       Object.entries(mappedValues).forEach(([field, value]) => {
         const apiField = analiseFieldMapping[field as keyof typeof analiseFieldMapping];
         if (apiField) {
@@ -596,7 +577,6 @@ const Index = () => {
 
       return apiData;
     } else {
-      // Criar um objeto com todos os campos da API definidos como null para amostras
       const apiData: SoilSample = {
         id_user: '',
         id_produtor: null,
@@ -614,7 +594,6 @@ const Index = () => {
         cpf: null
       };
 
-      // Mapear os valores do formato original para o formato da API para amostras
       Object.entries(mappedValues).forEach(([field, value]) => {
         const apiField = amostraFieldMapping[field as keyof typeof amostraFieldMapping];
         if (apiField) {
@@ -654,12 +633,32 @@ const Index = () => {
     return await response.json();
   };
 
+  const checkItemExists = async (codigo: string, tipo: 'analise' | 'amostra'): Promise<boolean> => {
+    try {
+      const endpoint = tipo === 'analise' 
+        ? `https://solifbackend-development.up.railway.app/solovivo/analise/buscar/${codigo}`
+        : `https://solifbackend-development.up.railway.app/solovivo/amostra/buscar/${codigo}`;
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': authToken || '',
+        },
+      });
+
+      return response.status === 200;
+    } catch (error) {
+      console.error('Erro ao verificar item:', error);
+      return false;
+    }
+  };
+
   const handleImport = async () => {
     try {
       if (!areRequiredFieldsMapped()) {
         toast({
           title: "Erro",
-          description: "Por favor, mapeie pelo menos os campos obrigatórios (id_user, cod) antes de prosseguir.",
+          description: "Por favor, mapeie pelo menos os campos obrigatórios antes de prosseguir.",
           variant: "destructive",
         });
         return;
@@ -684,6 +683,7 @@ const Index = () => {
       }
 
       setIsLoading(true);
+      setDuplicateItems([]);
       setImportProgress({
         total: data.length,
         processed: 0,
@@ -697,13 +697,31 @@ const Index = () => {
           const row = data[i];
           const mappedValues = calculateDerivedFields(row);
           
+          const itemExists = await checkItemExists(
+            mappedValues['cod'] || mappedValues['codigo'], 
+            activeTab === 'analises' ? 'analise' : 'amostra'
+          );
+
+          if (itemExists) {
+            setDuplicateItems(prev => [...prev, {
+              codigo: mappedValues['cod'] || mappedValues['codigo'],
+              tipo: activeTab === 'analises' ? 'analise' : 'amostra'
+            }]);
+            
+            setImportProgress(prev => ({
+              ...prev,
+              processed: prev.processed + 1,
+              failed: prev.failed + 1
+            }));
+            continue;
+          }
+
           let finalValues = mappedValues;
           if (activeTab === "analises") {
             finalValues = await adicionarDados(mappedValues);
           }
           
           const apiData = transformToApiFormat(finalValues);
-          
           const result = await submitToApi(apiData);
           results.push({ success: true, data: result });
           
@@ -725,6 +743,15 @@ const Index = () => {
       }
 
       const successCount = results.filter(r => r.success).length;
+      
+      if (duplicateItems.length > 0) {
+        toast({
+          title: "Itens já cadastrados",
+          description: `${duplicateItems.length} ${activeTab === 'analises' ? 'análises' : 'amostras'} não foram inseridas por já estarem cadastradas: ${duplicateItems.map(item => item.codigo).join(', ')}`,
+          variant: "destructive",
+        });
+      }
+
       toast({
         title: "Importação concluída",
         description: `${successCount} de ${data.length} registros importados com sucesso.`,
@@ -754,6 +781,7 @@ const Index = () => {
       success: 0,
       failed: 0,
     });
+    setDuplicateItems([]);
   };
 
   const getMappedFieldsCount = () => {
@@ -773,7 +801,6 @@ const Index = () => {
     return columns;
   };
 
-  // Renderização do formulário de autenticação
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -847,7 +874,6 @@ const Index = () => {
                   Você mapeou {getMappedFieldsCount()} de {analiseDbFields.length} campos.
                 </p>
                 
-                {/* Seletor de data para Análises */}
                 <div className="mb-6">
                   <label className="text-sm font-medium mb-1 block">
                     Data da Análise
@@ -882,7 +908,7 @@ const Index = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {analiseDbFields
-                    .filter(field => field !== 'data') // Excluir o campo 'data' pois agora usamos o calendário
+                    .filter(field => field !== 'data')
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
@@ -929,7 +955,6 @@ const Index = () => {
                   Você mapeou {getMappedFieldsCount()} de {amostraDbFields.length} campos.
                 </p>
                 
-                {/* Seletor de data para Amostras */}
                 <div className="mb-6">
                   <label className="text-sm font-medium mb-1 block">
                     Data da Amostra
@@ -964,7 +989,7 @@ const Index = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {amostraDbFields
-                    .filter(field => field !== 'data') // Excluir o campo 'data' pois agora usamos o calendário
+                    .filter(field => field !== 'data')
                     .map((field) => (
                     <div key={field} className="space-y-1">
                       <label htmlFor={`field-${field}`} className="text-sm font-medium">
