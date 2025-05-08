@@ -691,23 +691,22 @@ const Index = () => {
       : 'https://prodata.up.railway.app/solovivo/amostra';
 
       
-    // const response = await fetch(
-    //   endpoint,
-    //   {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'Authorization': authToken
-    //     },
-    //     body: JSON.stringify(rowData)
-    //   }
-    // );
+    const response = await fetch(
+      endpoint,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken
+        },
+        body: JSON.stringify(rowData)
+      }
+    );
 
-    // if (!response.ok) {
-    //   throw new Error(`Erro ao enviar dados: ${response.status}`);
-    // }
-
-    // return await response.json();
+    if (!response.ok) {
+      throw new Error(`Erro ao enviar dados: ${response.status}`);
+    }
+    return await response.json();
   };
 
   const checkItemExists = async (codigo: string, tipo: 'analise' | 'amostra'): Promise<boolean> => {
