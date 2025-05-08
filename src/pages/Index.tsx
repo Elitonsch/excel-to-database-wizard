@@ -44,9 +44,10 @@ interface AuthResponse {
   token: string;
 }
 
+
 interface AmostraResponse {
   id: number;
-  id_produtor: number;
+  idProdutor: number;
   talhao: string;
   nome: string;
   assentamento: string;
@@ -85,38 +86,38 @@ interface SoilAnalysis {
   id_user: string;
   id_produtor: number | null;
   codigo: string;
-  areia_total: number | null;
+  areia: number | null;
   silte: number | null;
   argila: number | null;
-  zn: number | null;
-  mn: number | null;
-  fe: number | null;
-  cu: number | null;
-  b: number | null;
-  m: number | null;
-  v: number | null;
+  zinco: number | null;
+  manganes: number | null;
+  ferro: number | null;
+  cobre: number | null;
+  boro: number | null;
+  saturacaoAluminio: number | null;
+  saturacaoBases: number | null;
   ctcph: number | null;
-  ctc: number | null;
-  sb: number | null;
-  mo: number | null;
-  hal: number | null;
-  al3: number | null;
-  mg: number | null;
-  ca: number | null;
-  s: number | null;
-  k: number | null;
-  pmeh: number | null;
-  phcacl2: number | null;
-  nc_talhao: number | null;
-  nc: number | null;
+  ctcEfetiva: number | null;
+  somaBases: number | null;
+  materiaOrganica: number | null;
+  hidrogenioAluminio: number | null;
+  aluminio: number | null;
+  magnesio: number | null;
+  calcio: number | null;
+  enxofre: number | null;
+  potassio: number | null;
+  fosforoMehlich: number | null;
+  phCacl: number | null;
+  necessidadeCalagemTalhao: number | null;
+  necessidadeCalagemHa: number | null;
   cultura: string | null;
-  classtext: string | null;
+  classificacaoTextural: string | null;
   delete: number;
   id_amostra: number | null;
-  fosfatagem: number | null;
-  fosfatagem_talhao: number | null;
-  potassio: number | null;
-  potassio_talhao: number | null;
+  fosfatagemHa: number | null;
+  fosfatagemTalhao: number | null;
+  potassioHa: number | null;
+  potassioTalhao: number | null;
   data: string;
   talhao: string | null;
   assentamento: string | null;
@@ -200,6 +201,8 @@ const classTextura = (areia: number, argila: number, silte: number) => {
 };
 
 const Index = () => {
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedCultura, setSelectedCultura] = useState('');
   const [data, setData] = useState<any[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
@@ -252,7 +255,7 @@ const Index = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `https://solifbackend-development.up.railway.app/solovivo/usuario?email=${authCredentials.email}&senha=${authCredentials.senha}`
+        `https://prodata.up.railway.app/solovivo/usuario?email=${authCredentials.email}&senha=${authCredentials.senha}`
       );
 
       if (!response.ok) {
@@ -281,7 +284,7 @@ const Index = () => {
 
   const getCurrentDbFields = () => {
     return activeTab === "analises" ? 
-      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo'] :
+      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo','cultura'] :
       ['id_user', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar','cpf'];
   };
 
@@ -332,7 +335,7 @@ const Index = () => {
 
   const areRequiredFieldsMapped = () => {
     const allFields = activeTab === "analises" ? 
-      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo'] :
+      ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo','cultura'] :
       ['id_user', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar','cpf'];
     
     return allFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
@@ -373,18 +376,74 @@ const Index = () => {
         const areia = mappedValues['areia_total'] || 0;
         const silte = mappedValues['silte'] || 0;
         const argila = mappedValues['argila'] || 0;
-
+        mappedValues['k']=k;
         const sb = ca + mg + k;
         const ctc = sb + al3;
         const ctcph = sb + hal;
         const v = (sb / ctcph) * 100;
         const m = (al3 / ctc) * 100;
+        
+        const Qc =(45 > v) ?  (((45 - v) * ctcph) / 100) : 0;
+
+        const arg=argila/10;
+        let nivelcritico=0;
+        let ct=0;
+        if(arg >=0 && arg <15){
+          nivelcritico=20;
+          ct=5;
+        }else if(arg >=15 && arg <20){
+          nivelcritico=18;
+          ct=6;
+        }else if(arg >=20 && arg <25){
+          nivelcritico=17;
+          ct=7;
+        }else if(arg >=25 && arg <30){
+          nivelcritico=15;
+          ct=9;
+        }else if(arg >=30 && arg <35){
+          nivelcritico=14;
+          ct=11;
+        }else if(arg >=35 && arg <40){
+          nivelcritico=13;
+          ct=15;
+        }else if(arg >=40 && arg <45){
+          nivelcritico=11;
+          ct=18;
+        }else if(arg >=45 && arg <50){
+          nivelcritico=10;
+          ct=23;
+        }else if(arg >=50 && arg <55){
+          nivelcritico=8;
+          ct=29;
+        }else if(arg >=55 && arg <60){
+          nivelcritico=7;
+          ct=37;
+        }else if(arg >=60 && arg <65){
+          nivelcritico=5;
+          ct=54;
+        }else if(arg >=65 && arg <70){
+          nivelcritico=4;
+          ct=70;
+        }
+
+        let fosfat=0;
+
+        fosfat= ((mappedValues['pmeh'] < nivelcritico) ? ((nivelcritico-mappedValues['pmeh'])*ct) : 0);
+        let postassio=0;
+
+        postassio = ((k < (ctcph * (3 / 100))) ? (((((ctcph * (3 / 100.0)) - k) * 391.0)*1.2)*2.0) : 0);
+
 
         mappedValues['sb'] = sb;
         mappedValues['ctc'] = ctc;
         mappedValues['ctcph'] = ctcph;
         mappedValues['v'] = v;
         mappedValues['m'] = m;
+        mappedValues['nc']=Qc;
+        mappedValues['fosfatagem']=fosfat;
+        mappedValues['potassio']=postassio;
+
+
 
         mappedValues['classtext'] = classTextura(areia/10, argila/10, silte/10);
       } catch (error) {
@@ -401,11 +460,11 @@ const Index = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `https://solifbackend-development.up.railway.app/solovivo/amostra/buscar/produtor/${mappedValues['cod']}`,
+        `https://prodata.up.railway.app/solovivo/amostra/buscar/produtor/${mappedValues['cod'].trim()}`,
         {
           method: 'GET',
           headers: {
-            'Authorization': authToken || '',
+            'Authorization': authToken,
           },
         }
       );
@@ -415,16 +474,19 @@ const Index = () => {
       }
 
       const authData: AmostraResponse = await response.json();
-      mappedValues['id_produtor']=authData.id_produtor;
+
+      mappedValues['id_produtor']=authData.idProdutor;
       mappedValues['id_amostra']=authData.id;
       mappedValues['talhao']=authData.talhao;
       mappedValues['assentamento']=authData.assentamento;
       mappedValues['cidade']=authData.cidade;
       mappedValues['nome']=authData.nome.trim()+' '+authData.sobrenome.trim();
-      mappedValues['cpf']=authData.assentamento;
+      mappedValues['cpf']=authData.cpf;
       mappedValues['propriedade']=authData.propriedade;
       mappedValues['area']=authData.area;
-
+      mappedValues['nc_talhao']=mappedValues['nc']*authData.area;
+      mappedValues['fosfatagem_talhao']=mappedValues['fosfatagem']*authData.area;
+      mappedValues['potassio_talhao']=mappedValues['potassio']*authData.area;
     } catch (error) {
       console.error('Erro ao buscar amostra:', error);
       toast({
@@ -443,7 +505,7 @@ const Index = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `https://solifbackend-development.up.railway.app/solovivo/produtor/filter/pagina?nome=${mappedValues['cpf']}`,
+        `https://prodata.up.railway.app/solovivo/produtor/filter/pagina?nome=${mappedValues['cpf']}`,
         {
           method: 'GET',
           headers: {
@@ -465,8 +527,6 @@ const Index = () => {
       const produtor = responseData.content[0];
       console.log(produtor);
       mappedValues['id_produtor'] = produtor.id;
-      const selectedIdUser = columnMapping['id_user'];
-      mappedValues['id_user'] = selectedIdUser;
       const selectedCulturaAtual = columnMapping['culturaatual'];
       const selectedCulturaImplementar = columnMapping['culturaimplementar'];
       mappedValues['culturaatual'] = selectedCulturaAtual;
@@ -500,38 +560,38 @@ const Index = () => {
         id_user: '',
         id_produtor: null,
         codigo: '',
-        areia_total: null,
+        areia: null,
         silte: null,
         argila: null,
-        zn: null,
-        mn: null,
-        fe: null,
-        cu: null,
-        b: null,
-        m: null,
-        v: null,
+        zinco: null,
+        manganes: null,
+        ferro: null,
+        cobre: null,
+        boro: null,
+        saturacaoAluminio: null,
+        saturacaoBases: null,
         ctcph: null,
-        ctc: null,
-        sb: null,
-        mo: null,
-        hal: null,
-        al3: null,
-        mg: null,
-        ca: null,
-        s: null,
-        k: null,
-        pmeh: null,
-        phcacl2: null,
-        nc_talhao: null,
-        nc: null,
+        ctcEfetiva: null,
+        somaBases: null,
+        materiaOrganica: null,
+        hidrogenioAluminio: null,
+        aluminio: null,
+        magnesio: null,
+        calcio: null,
+        enxofre: null,
+        potassio: null,
+        fosforoMehlich: null,
+        phCacl: null,
+        necessidadeCalagemTalhao: null,
+        necessidadeCalagemHa: null,
         cultura: null,
-        classtext: null,
+        classificacaoTextural: null,
         delete: 0,
         id_amostra: null,
-        fosfatagem: null,
-        fosfatagem_talhao: null,
-        potassio: null,
-        potassio_talhao: null,
+        fosfatagemHa: null,
+        fosfatagemTalhao: null,
+        potassioHa: null,
+        potassioTalhao: null,
         data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
         talhao: null,
         assentamento: null,
@@ -542,41 +602,41 @@ const Index = () => {
         area: null
       };
 
-      if (mappedValues['id_user']) apiData.id_user = mappedValues['id_user'];
+      apiData.id_user = selectedUserId;
       if (mappedValues['id_produtor']) apiData.id_produtor = mappedValues['id_produtor'];
       if (mappedValues['cod']) apiData.codigo = mappedValues['cod'];
-      if (mappedValues['areia_total'] !== undefined) apiData.areia_total = mappedValues['areia_total'];
+      if (mappedValues['areia_total'] !== undefined) apiData.areia = mappedValues['areia_total'];
       if (mappedValues['silte'] !== undefined) apiData.silte = mappedValues['silte'];
       if (mappedValues['argila'] !== undefined) apiData.argila = mappedValues['argila'];
-      if (mappedValues['zn'] !== undefined) apiData.zn = mappedValues['zn'];
-      if (mappedValues['mn'] !== undefined) apiData.mn = mappedValues['mn'];
-      if (mappedValues['fe'] !== undefined) apiData.fe = mappedValues['fe'];
-      if (mappedValues['cu'] !== undefined) apiData.cu = mappedValues['cu'];
-      if (mappedValues['b'] !== undefined) apiData.b = mappedValues['b'];
-      if (mappedValues['m'] !== undefined) apiData.m = mappedValues['m'];
-      if (mappedValues['v'] !== undefined) apiData.v = mappedValues['v'];
+      if (mappedValues['zn'] !== undefined) apiData.zinco = mappedValues['zn'];
+      if (mappedValues['mn'] !== undefined) apiData.manganes = mappedValues['mn'];
+      if (mappedValues['fe'] !== undefined) apiData.ferro = mappedValues['fe'];
+      if (mappedValues['cu'] !== undefined) apiData.cobre = mappedValues['cu'];
+      if (mappedValues['b'] !== undefined) apiData.boro = mappedValues['b'];
+      if (mappedValues['m'] !== undefined) apiData.saturacaoAluminio = mappedValues['m'];
+      if (mappedValues['v'] !== undefined) apiData.saturacaoBases = mappedValues['v'];
       if (mappedValues['ctcph'] !== undefined) apiData.ctcph = mappedValues['ctcph'];
-      if (mappedValues['ctc'] !== undefined) apiData.ctc = mappedValues['ctc'];
-      if (mappedValues['sb'] !== undefined) apiData.sb = mappedValues['sb'];
-      if (mappedValues['mo'] !== undefined) apiData.mo = mappedValues['mo'];
-      if (mappedValues['hal'] !== undefined) apiData.hal = mappedValues['hal'];
-      if (mappedValues['al3'] !== undefined) apiData.al3 = mappedValues['al3'];
-      if (mappedValues['mg'] !== undefined) apiData.mg = mappedValues['mg'];
-      if (mappedValues['ca'] !== undefined) apiData.ca = mappedValues['ca'];
-      if (mappedValues['s'] !== undefined) apiData.s = mappedValues['s'];
-      if (mappedValues['k'] !== undefined) apiData.k = mappedValues['k'];
-      if (mappedValues['pmeh'] !== undefined) apiData.pmeh = mappedValues['pmeh'];
-      if (mappedValues['phcacl2'] !== undefined) apiData.phcacl2 = mappedValues['phcacl2'];
-      if (mappedValues['nc_talhao'] !== undefined) apiData.nc_talhao = mappedValues['nc_talhao'];
-      if (mappedValues['nc'] !== undefined) apiData.nc = mappedValues['nc'];
-      if (mappedValues['cultura']) apiData.cultura = mappedValues['cultura'];
-      if (mappedValues['classtext']) apiData.classtext = mappedValues['classtext'];
+      if (mappedValues['ctc'] !== undefined) apiData.ctcEfetiva = mappedValues['ctc'];
+      if (mappedValues['sb'] !== undefined) apiData.somaBases = mappedValues['sb'];
+      if (mappedValues['mo'] !== undefined) apiData.materiaOrganica = mappedValues['mo'];
+      if (mappedValues['hal'] !== undefined) apiData.hidrogenioAluminio = mappedValues['hal'];
+      if (mappedValues['al3'] !== undefined) apiData.aluminio = mappedValues['al3'];
+      if (mappedValues['mg'] !== undefined) apiData.magnesio = mappedValues['mg'];
+      if (mappedValues['ca'] !== undefined) apiData.calcio = mappedValues['ca'];
+      if (mappedValues['s'] !== undefined) apiData.enxofre = mappedValues['s'];
+      if (mappedValues['k'] !== undefined) apiData.potassio = mappedValues['k'];
+      if (mappedValues['pmeh'] !== undefined) apiData.fosforoMehlich = mappedValues['pmeh'];
+      if (mappedValues['phcacl2'] !== undefined) apiData.phCacl = mappedValues['phcacl2'];
+      if (mappedValues['nc_talhao'] !== undefined) apiData.necessidadeCalagemTalhao = mappedValues['nc_talhao'];
+      if (mappedValues['nc'] !== undefined) apiData.necessidadeCalagemHa = mappedValues['nc'];
+      apiData.cultura =selectedCultura;
+      if (mappedValues['classtext']) apiData.classificacaoTextural = mappedValues['classtext'];
       if (mappedValues['delete'] !== undefined) apiData.delete = mappedValues['delete'];
       if (mappedValues['id_amostra']) apiData.id_amostra = mappedValues['id_amostra'];
-      if (mappedValues['fosfatagem'] !== undefined) apiData.fosfatagem = mappedValues['fosfatagem'];
-      if (mappedValues['fosfatagem_talhao'] !== undefined) apiData.fosfatagem_talhao = mappedValues['fosfatagem_talhao'];
-      if (mappedValues['potassio'] !== undefined) apiData.potassio = mappedValues['potassio'];
-      if (mappedValues['potassio_talhao'] !== undefined) apiData.potassio_talhao = mappedValues['potassio_talhao'];
+      if (mappedValues['fosfatagem'] !== undefined) apiData.fosfatagemHa = mappedValues['fosfatagem'];
+      if (mappedValues['fosfatagem_talhao'] !== undefined) apiData.fosfatagemTalhao = mappedValues['fosfatagem_talhao'];
+      if (mappedValues['potassio'] !== undefined) apiData.potassioHa = mappedValues['potassio'];
+      if (mappedValues['potassio_talhao'] !== undefined) apiData.potassioTalhao = mappedValues['potassio_talhao'];
       if (mappedValues['talhao']) apiData.talhao = mappedValues['talhao'];
       if (mappedValues['assentamento']) apiData.assentamento = mappedValues['assentamento'];
       if (mappedValues['cidade']) apiData.cidade = mappedValues['cidade'];
@@ -584,7 +644,7 @@ const Index = () => {
       if (mappedValues['cpf']) apiData.cpf = mappedValues['cpf'];
       if (mappedValues['propriedade']) apiData.propriedade = mappedValues['propriedade'];
       if (mappedValues['area'] !== undefined) apiData.area = mappedValues['area'];
-
+        console.log(apiData);
       return apiData;
     } else {
       const apiData: SoilSample = {
@@ -604,20 +664,19 @@ const Index = () => {
         cpf: null
       };
 
-      if (mappedValues['id_user']) apiData.id_user = mappedValues['id_user'];
+      if (mappedValues['id_user']) apiData.id_user =selectedUserId;
       if (mappedValues['id_produtor']) apiData.id_produtor = mappedValues['id_produtor'];
       if (mappedValues['codigo']) apiData.codigo = mappedValues['codigo'];
       if (mappedValues['talhao']) apiData.talhao = mappedValues['talhao'];
       if (mappedValues['area'] !== undefined) apiData.area = mappedValues['area'];
-      if (mappedValues['culturaatual']) apiData.culturaatual = mappedValues['culturaatual'];
-      if (mappedValues['culturaimplementar']) apiData.culturaimplementar = mappedValues['culturaimplementar'];
+      if (mappedValues['cultura']) apiData.culturaatual = mappedValues['culturaatual'];
       if (mappedValues['delete'] !== undefined) apiData.delete = mappedValues['delete'];
       if (mappedValues['informacoes']) apiData.infos = mappedValues['informacoes'];
       if (mappedValues['pontos']) apiData.pontos = mappedValues['pontos'];
       if (mappedValues['assentamento']) apiData.assentamento = mappedValues['assentamento'];
       if (mappedValues['nome']) apiData.nome = mappedValues['nome'];
       if (mappedValues['cpf']) apiData.cpf = mappedValues['cpf'];
-
+  
       return apiData;
     }
   };
@@ -626,35 +685,36 @@ const Index = () => {
     if (!authToken) {
       throw new Error('Token de autenticação não disponível');
     }
-
+    console.log(JSON.stringify(rowData))
     const endpoint = activeTab === "analises" 
-      ? 'https://solifbackend-development.up.railway.app/solovivo/analise'
-      : 'https://solifbackend-development.up.railway.app/solovivo/amostra';
+      ? 'https://prodata.up.railway.app/solovivo/analise'
+      : 'https://prodata.up.railway.app/solovivo/amostra';
 
-    const response = await fetch(
-      endpoint,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authToken
-        },
-        body: JSON.stringify(rowData)
-      }
-    );
+      
+    // const response = await fetch(
+    //   endpoint,
+    //   {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'Authorization': authToken
+    //     },
+    //     body: JSON.stringify(rowData)
+    //   }
+    // );
 
-    if (!response.ok) {
-      throw new Error(`Erro ao enviar dados: ${response.status}`);
-    }
+    // if (!response.ok) {
+    //   throw new Error(`Erro ao enviar dados: ${response.status}`);
+    // }
 
-    return await response.json();
+    // return await response.json();
   };
 
   const checkItemExists = async (codigo: string, tipo: 'analise' | 'amostra'): Promise<boolean> => {
     try {
       const endpoint = tipo === 'analise' 
-        ? `https://solifbackend-development.up.railway.app/solovivo/analise/buscar/${codigo}`
-        : `https://solifbackend-development.up.railway.app/solovivo/amostra/buscar/${codigo}`;
+        ? `https://prodata.up.railway.app/solovivo/analise/buscar/${codigo}`
+        : `https://prodata.up.railway.app/solovivo/amostra/buscar/${codigo}`;
 
       const response = await fetch(endpoint, {
         method: 'GET',
@@ -948,7 +1008,16 @@ const Index = () => {
                       </label>
                       <Select
                         value={columnMapping[field] || "none"}
-                        onValueChange={(value) => handleColumnMappingChange(field, value)}
+                        onValueChange={(value) => {
+                          handleColumnMappingChange(field, value);
+                          if (field === 'id_user') {
+                            console.log(value);
+                            setSelectedUserId(value);
+                          } else if (field === 'cultura') {
+                            console.log(value);
+                            setSelectedCultura(value);
+                          }
+                        }}
                       >
                         <SelectTrigger id={`field-${field}`} className="w-full">
                           <SelectValue placeholder="Selecione uma coluna" />
@@ -963,14 +1032,8 @@ const Index = () => {
                             ))
                           ) : field === 'delete' ? (
                             <SelectItem value="0">0</SelectItem>
-                          ) : field === 'culturaatual' ? (
-                            ['Forrageira', 'Milho'].map(option => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))
-                          ) : field === 'culturaimplementar' ? (
-                            ['Forrageira', 'Milho'].map(option => (
+                          ) : field === 'cultura' ? (
+                            ['Forrageira'].map(option => (
                               <SelectItem key={option} value={option}>
                                 {option}
                               </SelectItem>
