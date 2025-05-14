@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
-import { Database, X } from 'lucide-react';
+import { Database, X, Check, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -28,6 +28,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AuthCredentials {
   email: string;
@@ -228,6 +229,13 @@ const Index = () => {
   });
   const [activeTab, setActiveTab] = useState("analises");
   const [duplicateItems, setDuplicateItems] = useState<DuplicateItem[]>([]);
+  const [verifiedSamples, setVerifiedSamples] = useState<{
+    found: string[];
+    notFound: string[];
+  }>({
+    found: [],
+    notFound: [],
+  });
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
@@ -285,7 +293,7 @@ const Index = () => {
   const getCurrentDbFields = () => {
     return activeTab === "analises" ? 
       ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo','cultura'] :
-      ['id_user', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar','cpf'];
+      ['codigo'];
   };
 
   const getCurrentFieldTypes = () => {
@@ -336,7 +344,7 @@ const Index = () => {
   const areRequiredFieldsMapped = () => {
     const allFields = activeTab === "analises" ? 
       ['id_user', 'cod', 'areia_total', 'silte', 'argila', 'zn', 'mn', 'fe', 'cu', 'b', 'hal', 'al3', 'mg', 'ca', 's', 'k', 'pmeh', 'phcacl2', 'mo','cultura'] :
-      ['id_user', 'codigo', 'talhao', 'area', 'culturaatual', 'culturaimplementar','cpf'];
+      ['codigo'];
     
     return allFields.every(field => columnMapping[field] && columnMapping[field] !== 'none');
   };
@@ -432,6 +440,7 @@ const Index = () => {
         let postassio=0;
 
         postassio = ((k < (ctcph * (3 / 100))) ? (((((ctcph * (3 / 100.0)) - k) * 391.0)*1.2)*2.0) : 0);
+
 
 
         mappedValues['sb'] = sb;
@@ -729,7 +738,92 @@ const Index = () => {
     }
   };
 
+  const verifySamples = async () => {
+    try {
+      if (!columnMapping['codigo'] || columnMapping['codigo'] === 'none') {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione a coluna com os códigos das amostras.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!authToken) {
+        toast({
+          title: "Erro",
+          description: "Por favor, autentique-se antes de prosseguir.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsLoading(true);
+      
+      const found: string[] = [];
+      const notFound: string[] = [];
+      
+      for (let i = 0; i < data.length; i++) {
+        try {
+          const row = data[i];
+          const codigo = row[columnMapping['codigo']];
+          
+          if (!codigo) {
+            continue;
+          }
+          
+          const response = await fetch(
+            `https://prodata.up.railway.app/solovivo/amostra/buscar/${codigo}`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': authToken,
+              },
+            }
+          );
+
+          if (response.status === 200) {
+            found.push(codigo);
+          } else {
+            notFound.push(codigo);
+          }
+          
+          setImportProgress(prev => ({
+            ...prev,
+            processed: prev.processed + 1,
+          }));
+          
+        } catch (error) {
+          console.error('Erro ao verificar amostra:', error);
+          break; // Interrompe o processo em caso de erro
+        }
+      }
+      
+      setVerifiedSamples({ found, notFound });
+      
+      toast({
+        title: "Verificação concluída",
+        description: `${found.length} amostras encontradas e ${notFound.length} não encontradas.`,
+      });
+      
+    } catch (error) {
+      console.error('Erro durante a verificação:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro durante a verificação das amostras.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleImport = async () => {
+    if (activeTab === "amostras") {
+      await verifySamples();
+      return;
+    }
+    
     try {
       if (!areRequiredFieldsMapped()) {
         toast({
@@ -878,6 +972,7 @@ const Index = () => {
       failed: 0,
     });
     setDuplicateItems([]);
+    setVerifiedSamples({ found: [], notFound: [] });
   };
 
   const getMappedFieldsCount = () => {
@@ -951,7 +1046,7 @@ const Index = () => {
             <Tabs defaultValue="analises" value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="analises">Inserir Análises</TabsTrigger>
-                <TabsTrigger value="amostras">Inserir Amostras</TabsTrigger>
+                <TabsTrigger value="amostras">Verificar Amostras</TabsTrigger>
               </TabsList>
               
               <TabsContent value="analises" className="space-y-4">
@@ -1053,100 +1148,38 @@ const Index = () => {
               
               <TabsContent value="amostras" className="space-y-4">
                 <p className="mb-4 text-sm text-gray-600">
-                  Selecione a coluna da planilha que corresponde a cada campo da amostra. 
-                  Você mapeou {getMappedFieldsCount()} de {getCurrentDbFields().length} campos.
+                  Selecione a coluna da planilha que contém os códigos das amostras para verificar se já estão cadastradas.
                 </p>
                 
-                <div className="mb-6">
-                  <label className="text-sm font-medium mb-1 block">
-                    Data da Amostra
-                    <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? (
-                          format(selectedDate, "PPP", { locale: ptBR })
-                        ) : (
-                          <span>Selecione uma data</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        initialFocus
-                        locale={ptBR}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {getCurrentDbFields()
-                    .filter(field => field !== 'data' && field !== 'delete')
-                    .map((field) => (
-                    <div key={field} className="space-y-1">
-                      <label htmlFor={`field-${field}`} className="text-sm font-medium">
-                        {field}
-                        <span className="text-xs text-red-500 ml-1">*</span>
-                        <span className="text-xs text-gray-500 ml-1">
-                          ({getCurrentFieldTypes()[field]})
-                        </span>
-                      </label>
-                      <Select
-                        value={columnMapping[field] || "none"}
-                        onValueChange={(value) => handleColumnMappingChange(field, value)}
-                      >
-                        <SelectTrigger id={`field-${field}`} className="w-full">
-                          <SelectValue placeholder="Selecione uma coluna" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhum</SelectItem>
-                          {field === 'id_user' ? (
-                            ['hgTIwKKbG8W56W5HX7q7iU85g562'].map(option => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))
-                          ) : field === 'delete' ? (
-                            <SelectItem value="0">0</SelectItem>
-                          ) : field === 'culturaatual' ? (
-                            ['Forrageira', 'Milho'].map(option => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))
-                          ) : field === 'culturaimplementar' ? (
-                            ['Forrageira', 'Milho'].map(option => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            columns.map((column) => (
-                              <SelectItem key={column} value={column}>
-                                {column}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1">
+                    <label htmlFor="field-codigo" className="text-sm font-medium">
+                      Código da Amostra
+                      <span className="text-xs text-red-500 ml-1">*</span>
+                    </label>
+                    <Select
+                      value={columnMapping['codigo'] || "none"}
+                      onValueChange={(value) => handleColumnMappingChange('codigo', value)}
+                    >
+                      <SelectTrigger id="field-codigo" className="w-full">
+                        <SelectValue placeholder="Selecione uma coluna" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {columns.map((column) => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
           </div>
           
-          {importProgress.total > 0 && (
+          {importProgress.total > 0 && activeTab === "analises" && (
             <div className="bg-white p-4 border rounded-lg">
               <h3 className="text-lg font-medium mb-2">Progresso da Importação</h3>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
@@ -1168,7 +1201,7 @@ const Index = () => {
             </div>
           )}
           
-          {duplicateItems.length > 0 && (
+          {duplicateItems.length > 0 && activeTab === "analises" && (
             <div className="bg-white p-4 border rounded-lg border-amber-500">
               <h3 className="text-lg font-medium mb-2 text-amber-700">Itens já cadastrados</h3>
               <p className="text-sm text-gray-700 mb-2">
@@ -1184,17 +1217,63 @@ const Index = () => {
             </div>
           )}
           
+          {(verifiedSamples.found.length > 0 || verifiedSamples.notFound.length > 0) && activeTab === "amostras" && (
+            <div className="space-y-4">
+              {verifiedSamples.found.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-green-50">
+                    <CardTitle className="flex items-center text-green-700">
+                      <Check className="w-5 h-5 mr-2" />
+                      Amostras Encontradas ({verifiedSamples.found.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.found.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {verifiedSamples.notFound.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-amber-50">
+                    <CardTitle className="flex items-center text-amber-700">
+                      <List className="w-5 h-5 mr-2" />
+                      Amostras Não Encontradas ({verifiedSamples.notFound.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.notFound.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+          
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
               {data.length} registros encontrados na planilha.
             </p>
             <Button
               onClick={handleImport}
-              disabled={!areRequiredFieldsMapped() || !selectedDate || isLoading}
+              disabled={!areRequiredFieldsMapped() || (!selectedDate && activeTab === "analises") || isLoading}
               className="gap-2"
             >
               <Database className="w-4 h-4" />
-              {isLoading ? "Importando..." : "Importar Dados"}
+              {isLoading 
+                ? activeTab === "amostras" ? "Verificando..." : "Importando..." 
+                : activeTab === "amostras" ? "Verificar Amostras" : "Importar Dados"}
             </Button>
           </div>
         </div>
