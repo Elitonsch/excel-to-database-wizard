@@ -151,6 +151,190 @@ interface DuplicateItem {
   tipo: 'analise' | 'amostra';
 }
 
+interface ClassificacaoDTO {
+  id_user: string;
+  id_produtor: number | null;
+  cod: string;
+  phCacl: string;
+  calcio: string;
+  magnesio: string;
+  potassio: string;
+  somaBases: string;
+  ctcEfetiva: string;
+  ctcph: string;
+  saturacaoBases: string;
+  enxofre: string;
+  hidrogenioAluminio: string;
+  aluminio: string;
+  zinco: string;
+  boro: string;
+  cobre: string;
+  ferro: string;
+  manganes: string;
+  fosforoMehlich: string;
+  id_amostra: number | null;
+  delete: number;
+  data: string;
+}
+
+const Classificar = {
+  pHCaCl2: (value: number): string => {
+    if (value < 4.4) return "Muito Baixo";
+    else if (value >= 4.4 && value < 4.8) return "Baixo";
+    else if (value >= 4.8 && value < 5.5) return "Bom";
+    else if (value >= 5.5 && value <= 5.8) return "Alto";
+    else return "Muito Alto";
+  },
+
+  Ca: (value: number): string => {
+    if (value < 0.4) return "Muito Baixo";
+    else if (value >= 0.4 && value < 1.2) return "Baixo";
+    else if (value >= 1.2 && value < 2.4) return "Médio";
+    else if (value >= 2.4 && value <= 4) return "Bom";
+    else return "Muito Bom";
+  },
+
+  Mg: (value: number): string => {
+    if (value < 0.15) return "Muito Baixo";
+    else if (value >= 0.15 && value < 0.45) return "Baixo";
+    else if (value >= 0.45 && value < 0.9) return "Médio";
+    else if (value >= 0.9 && value <= 1.5) return "Bom";
+    else return "Muito Bom";
+  },
+
+  K: (value: number): string => {
+    if (value < 15) return "Muito Baixo";
+    else if (value >= 15 && value < 40) return "Baixo";
+    else if (value >= 40 && value < 70) return "Médio";
+    else if (value >= 70 && value <= 120) return "Bom";
+    else return "Muito Bom";
+  },
+
+  SB: (value: number): string => {
+    if (value < 0.6) return "Muito Baixo";
+    else if (value >= 0.6 && value < 1.8) return "Baixo";
+    else if (value >= 1.8 && value < 3.6) return "Médio";
+    else if (value >= 3.6 && value <= 6) return "Bom";
+    else return "Muito Bom";
+  },
+
+  TT: (value: number): string => {
+    if (value < 0.8) return "Muito Baixo";
+    else if (value >= 0.8 && value < 2.3) return "Baixo";
+    else if (value >= 2.3 && value < 4.6) return "Médio";
+    else if (value >= 4.6 && value <= 8) return "Bom";
+    else return "Muito Bom";
+  },
+
+  TTT: (value: number): string => {
+    if (value < 1.6) return "Muito Baixo";
+    else if (value >= 1.6 && value < 4.3) return "Baixo";
+    else if (value >= 4.3 && value < 8.6) return "Médio";
+    else if (value >= 8.6 && value <= 15) return "Bom";
+    else return "Muito Bom";
+  },
+
+  V: (value: number): string => {
+    if (value < 25) return "Muito Baixo";
+    else if (value >= 25 && value < 50) return "Baixo";
+    else if (value >= 50 && value < 70) return "Médio";
+    else if (value >= 70 && value <= 90) return "Alto";
+    else return "Muito Alto";
+  },
+
+  S: (value: number): string => {
+    if (value < 5) return "Muito Baixo";
+    else if (value >= 5 && value < 10) return "Baixo";
+    else if (value >= 10 && value < 15) return "Médio";
+    else if (value >= 15 && value <= 20) return "Bom";
+    else return "Muito Bom";
+  },
+
+  Al: (value: number): string => {
+    if (value < 0.2) return "Muito Bom";
+    else if (value >= 0.2 && value < 0.51) return "Bom";
+    else if (value >= 0.51 && value < 1.01) return "Médio";
+    else if (value >= 1.01 && value <= 2) return "Alto";
+    else return "Muito Alto";
+  },
+
+  Hal: (value: number): string => {
+    if (value < 1) return "Muito Baixo";
+    else if (value >= 1 && value < 2.5) return "Baixo";
+    else if (value >= 2.5 && value < 5) return "Médio";
+    else if (value >= 5 && value <= 9) return "Alto";
+    else return "Muito Alto";
+  },
+
+  Zn: (value: number): string => {
+    if (value < 0.4) return "Muito Baixo";
+    else if (value >= 0.4 && value < 0.9) return "Baixo";
+    else if (value >= 0.9 && value < 1.5) return "Médio";
+    else if (value >= 1.5 && value <= 2.2) return "Bom";
+    else return "Muito Bom";
+  },
+
+  B: (value: number): string => {
+    if (value < 0.15) return "Muito Baixo";
+    else if (value >= 0.15 && value < 0.35) return "Baixo";
+    else if (value >= 0.35 && value < 0.6) return "Médio";
+    else if (value >= 0.6 && value <= 0.9) return "Bom";
+    else return "Muito Bom";
+  },
+
+  Cu: (value: number): string => {
+    if (value < 0.3) return "Muito Baixo";
+    else if (value >= 0.3 && value < 0.7) return "Baixo";
+    else if (value >= 0.7 && value < 1.2) return "Médio";
+    else if (value >= 1.2 && value <= 1.8) return "Bom";
+    else return "Muito Bom";
+  },
+
+  Fe: (value: number): string => {
+    if (value < 8) return "Muito Baixo";
+    else if (value >= 8 && value < 18) return "Baixo";
+    else if (value >= 18 && value < 30) return "Médio";
+    else if (value >= 30 && value <= 45) return "Bom";
+    else return "Muito Bom";
+  },
+
+  Mn: (value: number): string => {
+    if (value < 2) return "Muito Baixo";
+    else if (value >= 2 && value < 5) return "Baixo";
+    else if (value >= 5 && value < 8) return "Médio";
+    else if (value >= 8 && value <= 12) return "Bom";
+    else return "Muito Bom";
+  },
+
+  Pmeh: (argila: number, pmeh: number): string => {
+    if (argila <= 100 && argila >= 60) {
+      if (pmeh <= 8) return "Muito Baixo";
+      else if (pmeh > 8 && pmeh <= 16) return "Baixo";
+      else if (pmeh > 16 && pmeh <= 24) return "Médio";
+      else if (pmeh > 24 && pmeh <= 36) return "Bom";
+      else return "Muito Bom";
+    } else if (argila < 60 && argila >= 35) {
+      if (pmeh < 12) return "Muito Baixo";
+      else if (pmeh > 12 && pmeh <= 24) return "Baixo";
+      else if (pmeh > 24 && pmeh <= 36) return "Médio";
+      else if (pmeh > 36 && pmeh <= 54) return "Bom";
+      else return "Muito Bom";
+    } else if (argila < 35 && argila >= 15) {
+      if (pmeh < 20) return "Muito Baixo";
+      else if (pmeh > 20 && pmeh <= 36) return "Baixo";
+      else if (pmeh > 36 && pmeh <= 60) return "Médio";
+      else if (pmeh > 60 && pmeh <= 90) return "Bom";
+      else return "Muito Bom";
+    } else {
+      if (pmeh < 30) return "Muito Baixo";
+      else if (pmeh > 30 && pmeh <= 60) return "Baixo";
+      else if (pmeh > 60 && pmeh <= 90) return "Médio";
+      else if (pmeh > 90 && pmeh <= 135) return "Bom";
+      else return "Muito Bom";
+    }
+  }
+};
+
 const classTextura = (areia: number, argila: number, silte: number) => {
   let texturaSolo;
 
@@ -694,12 +878,13 @@ const Index = () => {
     if (!authToken) {
       throw new Error('Token de autenticação não disponível');
     }
-    console.log(JSON.stringify(rowData))
+    
     const endpoint = activeTab === "analises" 
       ? 'https://prodata.up.railway.app/solovivo/analise'
       : 'https://prodata.up.railway.app/solovivo/amostra';
 
-      
+    console.log(JSON.stringify(rowData));
+    
     const response = await fetch(
       endpoint,
       {
@@ -715,7 +900,67 @@ const Index = () => {
     if (!response.ok) {
       throw new Error(`Erro ao enviar dados: ${response.status}`);
     }
-    return await response.json();
+    
+    const responseData = await response.json();
+    
+    // Se estiver na aba "analises", faz a requisição adicional para classificação
+    if (activeTab === "analises") {
+      try {
+        // Preparando os dados para a classificação
+        const classificacaoDTO: ClassificacaoDTO = {
+          id_user: selectedUserId,
+          id_produtor: rowData.id_produtor,
+          cod: rowData.codigo,
+          phCacl: Classificar.pHCaCl2(rowData.phCacl || 0),
+          calcio: Classificar.Ca(rowData.calcio || 0),
+          magnesio: Classificar.Mg(rowData.magnesio || 0),
+          potassio: Classificar.K((rowData.potassio || 0) * 391),
+          somaBases: Classificar.SB(rowData.somaBases || 0),
+          ctcEfetiva: Classificar.TT(rowData.ctcEfetiva || 0),
+          ctcph: Classificar.TTT(rowData.ctcph || 0),
+          saturacaoBases: Classificar.V(rowData.saturacaoBases || 0),
+          enxofre: Classificar.S(rowData.enxofre || 0),
+          hidrogenioAluminio: Classificar.Hal(rowData.hidrogenioAluminio || 0),
+          aluminio: Classificar.Al(rowData.aluminio || 0),
+          zinco: Classificar.Zn(rowData.zinco || 0),
+          boro: Classificar.B(rowData.boro || 0),
+          cobre: Classificar.Cu(rowData.cobre || 0),
+          ferro: Classificar.Fe(rowData.ferro || 0),
+          manganes: Classificar.Mn(rowData.manganes || 0),
+          fosforoMehlich: Classificar.Pmeh((rowData.argila || 0) / 10, rowData.fosforoMehlich || 0),
+          id_amostra: rowData.id_amostra,
+          delete: 0,
+          data: format(selectedDate || new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        };
+
+        console.log("Enviando dados de classificação:", classificacaoDTO);
+
+        const classificacaoResponse = await fetch(
+          'https://prodata.up.railway.app/solovivo/classificacao',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authToken
+            },
+            body: JSON.stringify(classificacaoDTO)
+          }
+        );
+
+        if (!classificacaoResponse.ok) {
+          console.error('Erro ao enviar classificação:', classificacaoResponse.status);
+          throw new Error(`Erro ao enviar classificação: ${classificacaoResponse.status}`);
+        }
+
+        const classificacaoResult = await classificacaoResponse.json();
+        console.log("Resposta da classificação:", classificacaoResult);
+      } catch (error) {
+        console.error("Erro ao enviar dados de classificação:", error);
+        throw error; // Propaga o erro para interromper o processo
+      }
+    }
+    
+    return responseData;
   };
 
   const checkItemExists = async (codigo: string, tipo: 'analise' | 'amostra'): Promise<boolean> => {
