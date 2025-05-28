@@ -424,6 +424,7 @@ const Index = () => {
     withAnalysis: [],
     withoutAnalysis: [],
   });
+  const [failedAnalyses, setFailedAnalyses] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleFileLoaded = (jsonData: any[], headers: string[]) => {
@@ -1127,6 +1128,7 @@ const Index = () => {
 
       setIsLoading(true);
       setDuplicateItems([]);
+      setFailedAnalyses([]);
       setImportProgress({
         total: data.length,
         processed: 0,
@@ -1136,6 +1138,7 @@ const Index = () => {
 
       const results = [];
       const newDuplicates: DuplicateItem[] = [];
+      const newFailedAnalyses: string[] = [];
       
       for (let i = 0; i < data.length; i++) {
         try {
@@ -1168,6 +1171,18 @@ const Index = () => {
           try {
             if (activeTab === "analises") {
               finalValues = await adicionarDados(mappedValues);
+              
+              // Verificar se id_produtor é null antes de fazer o POST
+              if (finalValues['id_produtor'] === null || finalValues['id_produtor'] === undefined) {
+                newFailedAnalyses.push(code);
+                setImportProgress(prev => ({
+                  total: prev.total,
+                  processed: prev.processed + 1,
+                  success: prev.success,
+                  failed: prev.failed + 1
+                }));
+                continue; // Pula para o próximo item sem fazer o POST
+              }
             } else {
               finalValues = await adicionarDadosAmostra(mappedValues);
             }
@@ -1205,12 +1220,21 @@ const Index = () => {
       }
 
       setDuplicateItems(newDuplicates);
+      setFailedAnalyses(newFailedAnalyses);
       const successCount = results.filter(r => r.success).length;
       
       if (newDuplicates.length > 0) {
         toast({
           title: `${newDuplicates.length} ${activeTab === 'analises' ? 'análises' : 'amostras'} já cadastradas`,
           description: `Os seguintes itens não foram inseridos pois já estão cadastrados: ${newDuplicates.map(item => item.codigo).join(', ')}`,
+          variant: "destructive",
+        });
+      }
+
+      if (newFailedAnalyses.length > 0) {
+        toast({
+          title: `${newFailedAnalyses.length} análises não cadastradas`,
+          description: `As seguintes análises não foram cadastradas por não ter produtor associado: ${newFailedAnalyses.join(', ')}`,
           variant: "destructive",
         });
       }
@@ -1245,6 +1269,7 @@ const Index = () => {
       failed: 0,
     });
     setDuplicateItems([]);
+    setFailedAnalyses([]);
     setVerifiedSamples({ found: [], notFound: [], withAnalysis: [], withoutAnalysis: [] });
   };
 
@@ -1484,6 +1509,22 @@ const Index = () => {
                 {duplicateItems.map((item, index) => (
                   <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
                     {item.codigo}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {failedAnalyses.length > 0 && activeTab === "analises" && (
+            <div className="bg-white p-4 border rounded-lg border-red-500">
+              <h3 className="text-lg font-medium mb-2 text-red-700">Análises não cadastradas</h3>
+              <p className="text-sm text-gray-700 mb-2">
+                As seguintes análises não foram cadastradas por não ter produtor associado:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {failedAnalyses.map((codigo, index) => (
+                  <span key={index} className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">
+                    {codigo}
                   </span>
                 ))}
               </div>
