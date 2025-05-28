@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import FileUpload from '@/components/FileUpload';
 import { Button } from '@/components/ui/button';
-import { Database, X, Check, List } from 'lucide-react';
+import { Database, X, Check, List, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -416,9 +416,13 @@ const Index = () => {
   const [verifiedSamples, setVerifiedSamples] = useState<{
     found: string[];
     notFound: string[];
+    withAnalysis: string[];
+    withoutAnalysis: string[];
   }>({
     found: [],
     notFound: [],
+    withAnalysis: [],
+    withoutAnalysis: [],
   });
   const { toast } = useToast();
 
@@ -1007,6 +1011,8 @@ const Index = () => {
       
       const found: string[] = [];
       const notFound: string[] = [];
+      const withAnalysis: string[] = [];
+      const withoutAnalysis: string[] = [];
       
       for (let i = 0; i < data.length; i++) {
         try {
@@ -1029,6 +1035,28 @@ const Index = () => {
 
           if (response.status === 200) {
             found.push(codigo);
+            
+            // Se a amostra foi encontrada, verificar se tem análise
+            try {
+              const analysisResponse = await fetch(
+                `https://prodata.up.railway.app/solovivo/analise/buscar/${codigo}`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': authToken,
+                  },
+                }
+              );
+
+              if (analysisResponse.status === 200) {
+                withAnalysis.push(codigo);
+              } else {
+                withoutAnalysis.push(codigo);
+              }
+            } catch (error) {
+              console.error('Erro ao verificar análise:', error);
+              withoutAnalysis.push(codigo);
+            }
           } else {
             notFound.push(codigo);
           }
@@ -1044,11 +1072,11 @@ const Index = () => {
         }
       }
       
-      setVerifiedSamples({ found, notFound });
+      setVerifiedSamples({ found, notFound, withAnalysis, withoutAnalysis });
       
       toast({
         title: "Verificação concluída",
-        description: `${found.length} amostras encontradas e ${notFound.length} não encontradas.`,
+        description: `${found.length} amostras encontradas (${withAnalysis.length} com análise, ${withoutAnalysis.length} sem análise) e ${notFound.length} não encontradas.`,
       });
       
     } catch (error) {
@@ -1217,7 +1245,7 @@ const Index = () => {
       failed: 0,
     });
     setDuplicateItems([]);
-    setVerifiedSamples({ found: [], notFound: [] });
+    setVerifiedSamples({ found: [], notFound: [], withAnalysis: [], withoutAnalysis: [] });
   };
 
   const getMappedFieldsCount = () => {
@@ -1393,7 +1421,7 @@ const Index = () => {
               
               <TabsContent value="amostras" className="space-y-4">
                 <p className="mb-4 text-sm text-gray-600">
-                  Selecione a coluna da planilha que contém os códigos das amostras para verificar se já estão cadastradas.
+                  Selecione a coluna da planilha que contém os códigos das amostras para verificar se já estão cadastradas e se possuem análises.
                 </p>
                 
                 <div className="grid grid-cols-1 gap-4">
@@ -1476,6 +1504,46 @@ const Index = () => {
                     <div className="flex flex-wrap gap-2">
                       {verifiedSamples.found.map((codigo, index) => (
                         <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {verifiedSamples.withAnalysis.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-blue-50">
+                    <CardTitle className="flex items-center text-blue-700">
+                      <Check className="w-5 h-5 mr-2" />
+                      Amostras com Análises ({verifiedSamples.withAnalysis.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.withAnalysis.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {verifiedSamples.withoutAnalysis.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-orange-50">
+                    <CardTitle className="flex items-center text-orange-700">
+                      <AlertTriangle className="w-5 h-5 mr-2" />
+                      Amostras sem Análises ({verifiedSamples.withoutAnalysis.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.withoutAnalysis.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-sm">
                           {codigo}
                         </span>
                       ))}
