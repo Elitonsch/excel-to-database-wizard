@@ -46,7 +46,6 @@ interface AuthResponse {
   token: string;
 }
 
-
 interface AmostraResponse {
   id: number;
   idProdutor: number;
@@ -640,8 +639,6 @@ const Index = () => {
 
         postassio = ((k < (ctcph * (3 / 100))) ? (((((ctcph * (3 / 100.0)) - k) * 391.0)*1.2)*2.0) : 0);
 
-
-
         mappedValues['sb'] = sb;
         mappedValues['ctc'] = ctc;
         mappedValues['ctcph'] = ctcph;
@@ -650,8 +647,6 @@ const Index = () => {
         mappedValues['nc']=Qc;
         mappedValues['fosfatagem']=fosfat;
         mappedValues['potassio']=postassio;
-
-
 
         mappedValues['classtext'] = classTextura(areia/10, argila/10, silte/10);
       } catch (error) {
@@ -758,7 +753,7 @@ const Index = () => {
         variant: "destructive",
       });
       setIsLoading(false);
-      throw error; // Re-throw the error to stop the process
+      throw error;
     }
   };
 
@@ -918,10 +913,8 @@ const Index = () => {
     
     const responseData = await response.json();
     
-    // Se estiver na aba "analises", faz a requisição adicional para classificação
     if (activeTab === "analises") {
       try {
-        // Preparando os dados para a classificação
         const classificacaoDTO: ClassificacaoDTO = {
           id_user: selectedUserId,
           id_produtor: rowData.id_produtor,
@@ -971,7 +964,7 @@ const Index = () => {
         console.log("Resposta da classificação:", classificacaoResult);
       } catch (error) {
         console.error("Erro ao enviar dados de classificação:", error);
-        throw error; // Propaga o erro para interromper o processo
+        throw error;
       }
     }
     
@@ -1061,7 +1054,6 @@ const Index = () => {
           if (response.status === 200) {
             found.push(codigo);
             
-            // Se a amostra foi encontrada, verificar se tem análise
             try {
               const analysisResponse = await fetch(
                 `https://prodata.up.railway.app/solovivo/analise/buscar/${codigo}`,
@@ -1204,7 +1196,6 @@ const Index = () => {
             if (activeTab === "analises") {
               finalValues = await adicionarDados(mappedValues);
               
-              // Verificar se id_produtor é null antes de fazer o POST
               if (finalValues['id_produtor'] === null || finalValues['id_produtor'] === undefined) {
                 newFailedAnalyses.push(code);
                 setImportProgress(prev => ({
@@ -1213,7 +1204,7 @@ const Index = () => {
                   success: prev.success,
                   failed: prev.failed + 1
                 }));
-                continue; // Pula para o próximo item sem fazer o POST
+                continue;
               }
             } else {
               finalValues = await adicionarDadosAmostra(mappedValues);
@@ -1226,7 +1217,7 @@ const Index = () => {
               success: prev.success,
               failed: prev.failed + 1
             }));
-            break; // Stop the process if there's an error
+            break;
           }
 
           const apiData = transformToApiFormat(finalValues);
@@ -1247,7 +1238,7 @@ const Index = () => {
             processed: prev.processed + 1,
             failed: prev.failed + 1
           }));
-          break; // Stop the process if there's an error
+          break;
         }
       }
 
@@ -1360,345 +1351,338 @@ const Index = () => {
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8 text-center">Importador - Dayane</h1>
       
-      {!isAuthenticated ? (
-        // ... keep existing code (authentication form) the same ...
+      {!data.length ? (
+        <FileUpload onFileLoaded={handleFileLoaded} />
       ) : (
-        <>
-          {!data.length ? (
-            <FileUpload onFileLoaded={handleFileLoaded} />
-          ) : (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Mapear Colunas</h2>
-                <Button variant="ghost" onClick={handleReset} className="gap-2">
-                  <X className="w-4 h-4" />
-                  Cancelar
-                </Button>
-              </div>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Mapear Colunas</h2>
+            <Button variant="ghost" onClick={handleReset} className="gap-2">
+              <X className="w-4 h-4" />
+              Cancelar
+            </Button>
+          </div>
+          
+          <div className="bg-white p-4 border rounded-lg">
+            <Tabs defaultValue="analises" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="analises">Inserir Análises</TabsTrigger>
+                <TabsTrigger value="amostras">Verificar Amostras</TabsTrigger>
+              </TabsList>
               
-              <div className="bg-white p-4 border rounded-lg">
-                <Tabs defaultValue="analises" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="analises">Inserir Análises</TabsTrigger>
-                    <TabsTrigger value="amostras">Verificar Amostras</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="analises" className="space-y-4">
-                    <p className="mb-4 text-sm text-gray-600">
-                      Selecione a coluna da planilha que corresponde a cada campo do banco de dados. 
-                      Você mapeou {getMappedFieldsCount()} de {getCurrentDbFields().length} campos.
-                    </p>
-                    
-                    <div className="mb-6">
-                      <label className="text-sm font-medium mb-1 block">
-                        Data da Análise
-                        <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
+              <TabsContent value="analises" className="space-y-4">
+                <p className="mb-4 text-sm text-gray-600">
+                  Selecione a coluna da planilha que corresponde a cada campo do banco de dados. 
+                  Você mapeou {getMappedFieldsCount()} de {getCurrentDbFields().length} campos.
+                </p>
+                
+                <div className="mb-6">
+                  <label className="text-sm font-medium mb-1 block">
+                    Data da Análise
+                    <span className="text-xs text-gray-500 ml-1">(obrigatório)</span>
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? (
+                          format(selectedDate, "PPP", { locale: ptBR })
+                        ) : (
+                          <span>Selecione uma data</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                        locale={ptBR}
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getCurrentDbFields()
+                    .filter(field => field !== 'data' && field !== 'delete')
+                    .map((field) => (
+                    <div key={field} className="space-y-1">
+                      <label htmlFor={`field-${field}`} className="text-sm font-medium">
+                        {field}
+                        <span className="text-xs text-red-500 ml-1">*</span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({getCurrentFieldTypes()[field]})
+                        </span>
                       </label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {selectedDate ? (
-                              format(selectedDate, "PPP", { locale: ptBR })
-                            ) : (
-                              <span>Selecione uma data</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={setSelectedDate}
-                            initialFocus
-                            locale={ptBR}
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {getCurrentDbFields()
-                        .filter(field => field !== 'data' && field !== 'delete')
-                        
-                        .map((field) => (
-                        <div key={field} className="space-y-1">
-                          <label htmlFor={`field-${field}`} className="text-sm font-medium">
-                            {field}
-                            <span className="text-xs text-red-500 ml-1">*</span>
-                            <span className="text-xs text-gray-500 ml-1">
-                              ({getCurrentFieldTypes()[field]})
-                            </span>
-                          </label>
-                          <Select
-                            value={columnMapping[field] || "none"}
-                            onValueChange={(value) => {
-                              handleColumnMappingChange(field, value);
-                              if (field === 'id_user') {
-                                console.log(value);
-                                setSelectedUserId(value);
-                              } else if (field === 'cultura') {
-                                console.log(value);
-                                setSelectedCultura(value);
-                              }
-                            }}
-                          >
-                            <SelectTrigger id={`field-${field}`} className="w-full">
-                              <SelectValue placeholder="Selecione uma coluna" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Nenhum</SelectItem>
-                              {field === 'id_user' ? (
-                                ['JNA', 'CNP'].map(option => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))
-                              ) : field === 'delete' ? (
-                                <SelectItem value="0">0</SelectItem>
-                              ) : field === 'cultura' ? (
-                                ['Forrageira'].map(option => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                columns.map((column) => (
-                                  <SelectItem key={column} value={column}>
-                                    {column}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="amostras" className="space-y-4">
-                    <p className="mb-4 text-sm text-gray-600">
-                      Selecione a coluna da planilha que contém os códigos das amostras para verificar se já estão cadastradas e se possuem análises.
-                    </p>
-                    
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-1">
-                        <label htmlFor="field-codigo" className="text-sm font-medium">
-                          Código da Amostra
-                          <span className="text-xs text-red-500 ml-1">*</span>
-                        </label>
-                        <Select
-                          value={columnMapping['codigo'] || "none"}
-                          onValueChange={(value) => handleColumnMappingChange('codigo', value)}
-                        >
-                          <SelectTrigger id="field-codigo" className="w-full">
-                            <SelectValue placeholder="Selecione uma coluna" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Nenhum</SelectItem>
-                            {columns.map((column) => (
+                      <Select
+                        value={columnMapping[field] || "none"}
+                        onValueChange={(value) => {
+                          handleColumnMappingChange(field, value);
+                          if (field === 'id_user') {
+                            console.log(value);
+                            setSelectedUserId(value);
+                          } else if (field === 'cultura') {
+                            console.log(value);
+                            setSelectedCultura(value);
+                          }
+                        }}
+                      >
+                        <SelectTrigger id={`field-${field}`} className="w-full">
+                          <SelectValue placeholder="Selecione uma coluna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum</SelectItem>
+                          {field === 'id_user' ? (
+                            ['JNA', 'CNP'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : field === 'delete' ? (
+                            <SelectItem value="0">0</SelectItem>
+                          ) : field === 'cultura' ? (
+                            ['Forrageira'].map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            columns.map((column) => (
                               <SelectItem key={column} value={column}>
                                 {column}
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {isLoading && activeTab === "amostras" && (
-                      <Card className="border-blue-200">
-                        <CardHeader className="bg-blue-50">
-                          <CardTitle className="flex items-center text-blue-700">
-                            <Loader className="w-5 h-5 mr-2 animate-spin" />
-                            Verificando Amostras
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm text-gray-600">
-                              <span>Progresso: {verificationProgress.processed} / {verificationProgress.total}</span>
-                              <span>{Math.round((verificationProgress.processed / verificationProgress.total) * 100)}%</span>
-                            </div>
-                            <Progress 
-                              value={(verificationProgress.processed / verificationProgress.total) * 100} 
-                              className="w-full h-3"
-                            />
-                          </div>
-                          
-                          {verificationProgress.currentSample && (
-                            <div className="text-center">
-                              <p className="text-sm text-gray-500">Verificando amostra:</p>
-                              <p className="font-medium text-blue-700">{verificationProgress.currentSample}</p>
-                            </div>
+                            ))
                           )}
-                        </CardContent>
-                      </Card>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
-              
-              {importProgress.total > 0 && activeTab === "analises" && (
-                <div className="bg-white p-4 border rounded-lg">
-                  <h3 className="text-lg font-medium mb-2">Progresso da Importação</h3>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-                    <div 
-                      className="bg-blue-600 h-2.5 rounded-full" 
-                      style={{ width: `${(importProgress.processed / importProgress.total) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p>Processados: {importProgress.processed} / {importProgress.total}</p>
-                      <p>Sucesso: {importProgress.success}</p>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div>
-                      <p>Falhas: {importProgress.failed}</p>
-                      <p>Restantes: {importProgress.total - importProgress.processed}</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              )}
+              </TabsContent>
               
-              {duplicateItems.length > 0 && activeTab === "analises" && (
-                <div className="bg-white p-4 border rounded-lg border-amber-500">
-                  <h3 className="text-lg font-medium mb-2 text-amber-700">Itens já cadastrados</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    Os seguintes códigos já estão cadastrados no sistema:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {duplicateItems.map((item, index) => (
-                      <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
-                        {item.codigo}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {failedAnalyses.length > 0 && activeTab === "analises" && (
-                <div className="bg-white p-4 border rounded-lg border-red-500">
-                  <h3 className="text-lg font-medium mb-2 text-red-700">Análises não cadastradas</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    As seguintes análises não foram cadastradas por não ter produtor associado:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {failedAnalyses.map((codigo, index) => (
-                      <span key={index} className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">
-                        {codigo}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {(verifiedSamples.found.length > 0 || verifiedSamples.notFound.length > 0) && activeTab === "amostras" && (
-                <div className="space-y-4">
-                  {verifiedSamples.found.length > 0 && (
-                    <Card>
-                      <CardHeader className="bg-green-50">
-                        <CardTitle className="flex items-center text-green-700">
-                          <Check className="w-5 h-5 mr-2" />
-                          Amostras Encontradas ({verifiedSamples.found.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="flex flex-wrap gap-2">
-                          {verifiedSamples.found.map((codigo, index) => (
-                            <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
-                              {codigo}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {verifiedSamples.withAnalysis.length > 0 && (
-                    <Card>
-                      <CardHeader className="bg-blue-50">
-                        <CardTitle className="flex items-center text-blue-700">
-                          <Check className="w-5 h-5 mr-2" />
-                          Amostras com Análises ({verifiedSamples.withAnalysis.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="flex flex-wrap gap-2">
-                          {verifiedSamples.withAnalysis.map((codigo, index) => (
-                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                              {codigo}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {verifiedSamples.withoutAnalysis.length > 0 && (
-                    <Card>
-                      <CardHeader className="bg-orange-50">
-                        <CardTitle className="flex items-center text-orange-700">
-                          <AlertTriangle className="w-5 h-5 mr-2" />
-                          Amostras sem Análises ({verifiedSamples.withoutAnalysis.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="flex flex-wrap gap-2">
-                          {verifiedSamples.withoutAnalysis.map((codigo, index) => (
-                            <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-sm">
-                              {codigo}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {verifiedSamples.notFound.length > 0 && (
-                    <Card>
-                      <CardHeader className="bg-amber-50">
-                        <CardTitle className="flex items-center text-amber-700">
-                          <List className="w-5 h-5 mr-2" />
-                          Amostras Não Encontradas ({verifiedSamples.notFound.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="flex flex-wrap gap-2">
-                          {verifiedSamples.notFound.map((codigo, index) => (
-                            <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
-                              {codigo}
-                            </span>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600">
-                  {data.length} registros encontrados na planilha.
+              <TabsContent value="amostras" className="space-y-4">
+                <p className="mb-4 text-sm text-gray-600">
+                  Selecione a coluna da planilha que contém os códigos das amostras para verificar se já estão cadastradas e se possuem análises.
                 </p>
-                <Button
-                  onClick={activeTab === "amostras" ? verifySamples : handleImport}
-                  disabled={!areRequiredFieldsMapped() || (!selectedDate && activeTab === "analises") || isLoading}
-                  className="gap-2"
-                >
-                  <Database className="w-4 h-4" />
-                  {isLoading 
-                    ? activeTab === "amostras" ? "Verificando..." : "Importando..." 
-                    : activeTab === "amostras" ? "Verificar Amostras" : "Importar Dados"}
-                </Button>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1">
+                    <label htmlFor="field-codigo" className="text-sm font-medium">
+                      Código da Amostra
+                      <span className="text-xs text-red-500 ml-1">*</span>
+                    </label>
+                    <Select
+                      value={columnMapping['codigo'] || "none"}
+                      onValueChange={(value) => handleColumnMappingChange('codigo', value)}
+                    >
+                      <SelectTrigger id="field-codigo" className="w-full">
+                        <SelectValue placeholder="Selecione uma coluna" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {columns.map((column) => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {isLoading && activeTab === "amostras" && (
+                  <Card className="border-blue-200">
+                    <CardHeader className="bg-blue-50">
+                      <CardTitle className="flex items-center text-blue-700">
+                        <Loader className="w-5 h-5 mr-2 animate-spin" />
+                        Verificando Amostras
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>Progresso: {verificationProgress.processed} / {verificationProgress.total}</span>
+                          <span>{Math.round((verificationProgress.processed / verificationProgress.total) * 100)}%</span>
+                        </div>
+                        <Progress 
+                          value={(verificationProgress.processed / verificationProgress.total) * 100} 
+                          className="w-full h-3"
+                        />
+                      </div>
+                      
+                      {verificationProgress.currentSample && (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-500">Verificando amostra:</p>
+                          <p className="font-medium text-blue-700">{verificationProgress.currentSample}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          {importProgress.total > 0 && activeTab === "analises" && (
+            <div className="bg-white p-4 border rounded-lg">
+              <h3 className="text-lg font-medium mb-2">Progresso da Importação</h3>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${(importProgress.processed / importProgress.total) * 100}%` }}
+                ></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p>Processados: {importProgress.processed} / {importProgress.total}</p>
+                  <p>Sucesso: {importProgress.success}</p>
+                </div>
+                <div>
+                  <p>Falhas: {importProgress.failed}</p>
+                  <p>Restantes: {importProgress.total - importProgress.processed}</p>
+                </div>
               </div>
             </div>
           )}
-        </>
+          
+          {duplicateItems.length > 0 && activeTab === "analises" && (
+            <div className="bg-white p-4 border rounded-lg border-amber-500">
+              <h3 className="text-lg font-medium mb-2 text-amber-700">Itens já cadastrados</h3>
+              <p className="text-sm text-gray-700 mb-2">
+                Os seguintes códigos já estão cadastrados no sistema:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {duplicateItems.map((item, index) => (
+                  <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
+                    {item.codigo}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {failedAnalyses.length > 0 && activeTab === "analises" && (
+            <div className="bg-white p-4 border rounded-lg border-red-500">
+              <h3 className="text-lg font-medium mb-2 text-red-700">Análises não cadastradas</h3>
+              <p className="text-sm text-gray-700 mb-2">
+                As seguintes análises não foram cadastradas por não ter produtor associado:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {failedAnalyses.map((codigo, index) => (
+                  <span key={index} className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm">
+                    {codigo}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {(verifiedSamples.found.length > 0 || verifiedSamples.notFound.length > 0) && activeTab === "amostras" && (
+            <div className="space-y-4">
+              {verifiedSamples.found.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-green-50">
+                    <CardTitle className="flex items-center text-green-700">
+                      <Check className="w-5 h-5 mr-2" />
+                      Amostras Encontradas ({verifiedSamples.found.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.found.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {verifiedSamples.withAnalysis.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-blue-50">
+                    <CardTitle className="flex items-center text-blue-700">
+                      <Check className="w-5 h-5 mr-2" />
+                      Amostras com Análises ({verifiedSamples.withAnalysis.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.withAnalysis.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {verifiedSamples.withoutAnalysis.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-orange-50">
+                    <CardTitle className="flex items-center text-orange-700">
+                      <AlertTriangle className="w-5 h-5 mr-2" />
+                      Amostras sem Análises ({verifiedSamples.withoutAnalysis.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.withoutAnalysis.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {verifiedSamples.notFound.length > 0 && (
+                <Card>
+                  <CardHeader className="bg-amber-50">
+                    <CardTitle className="flex items-center text-amber-700">
+                      <List className="w-5 h-5 mr-2" />
+                      Amostras Não Encontradas ({verifiedSamples.notFound.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {verifiedSamples.notFound.map((codigo, index) => (
+                        <span key={index} className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-sm">
+                          {codigo}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+          
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-600">
+              {data.length} registros encontrados na planilha.
+            </p>
+            <Button
+              onClick={activeTab === "amostras" ? verifySamples : handleImport}
+              disabled={!areRequiredFieldsMapped() || (!selectedDate && activeTab === "analises") || isLoading}
+              className="gap-2"
+            >
+              <Database className="w-4 h-4" />
+              {isLoading 
+                ? activeTab === "amostras" ? "Verificando..." : "Importando..." 
+                : activeTab === "amostras" ? "Verificar Amostras" : "Importar Dados"}
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
